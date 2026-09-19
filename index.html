@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0a0a1a">
-<title>捏脸实验室 · 软物理变形</title>
+<title>Face Lab · Soft Body Deformation</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{width:100%;height:100%;overflow:hidden;background:#06060f;color:#fff;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
     user-select:none;-webkit-user-select:none;touch-action:none;}
   #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
     background:radial-gradient(ellipse at center,#11112a 0%,#06060f 75%);}
@@ -18,7 +18,7 @@
   canvas{display:block;width:100%;height:100%;cursor:grab;}
   canvas.dragging{cursor:grabbing;}
 
-  /* 顶部 HUD */
+  /* top HUD */
   #hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;
     align-items:center;padding:12px 14px;pointer-events:none;z-index:6;}
   .pill{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(6px);
@@ -29,7 +29,7 @@
     color:#fff;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:600;letter-spacing:1px;}
   #backBtn:active{transform:scale(.94);}
 
-  /* 挑战进度条 */
+  /* challenge progress bar */
   #challenge{position:absolute;top:50px;left:14px;right:14px;z-index:6;pointer-events:none;
     background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px 12px;
     backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;}
@@ -38,7 +38,7 @@
   #chBar{height:100%;width:0%;background:linear-gradient(90deg,#5ab0ff,#9a6bff);border-radius:5px;transition:width .15s;}
   #chTime{font-size:10px;color:rgba(255,255,255,.55);margin-top:5px;text-align:right;}
 
-  /* 覆盖层 */
+  /* overlay layer */
   .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
     text-align:center;z-index:10;background:rgba(6,6,15,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:22px;overflow-y:auto;}
   .logo{font-size:13px;letter-spacing:5px;color:rgba(255,255,255,.45);margin-bottom:4px;}
@@ -70,7 +70,7 @@
   .chItem.done{border-color:rgba(90,255,150,.5);background:rgba(90,255,150,.08);}
   .chItem.done .ct::after{content:" ✓";color:#5aff96;}
 
-  /* 混音模式切换组 */
+  /* remix mode segment group */
   .remixPanel{width:100%;max-width:300px;margin-bottom:14px;}
   .remixRow{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:11px;}
   .remixRow span{width:54px;color:rgba(255,255,255,.6);}
@@ -108,73 +108,73 @@
 
     <div id="hud" class="hidden">
       <div class="pill">SCORE <b id="scoreVal">0</b></div>
-      <button id="backBtn" class="hidden">返回</button>
+      <button id="backBtn" class="hidden">BACK</button>
       <div class="pill" id="bestPill">BEST <b id="bestVal">0</b></div>
     </div>
 
     <div id="challenge">
-      <div id="chTitle">任务</div>
+      <div id="chTitle">TASK</div>
       <div id="chBarWrap"><div id="chBar"></div></div>
       <div id="chTime"></div>
     </div>
 
-    <div class="hint" id="playHint">拖动 / 双指捏合角色脸部 · 释放即回弹</div>
+    <div class="hint" id="playHint">Drag or pinch the face · release to bounce back</div>
     <div class="toast" id="toast"></div>
 
-    <!-- 主菜单 -->
+    <!-- Main menu -->
     <div id="menuScreen" class="overlay">
       <div class="logo">SOFT BODY FACE LAB</div>
-      <div class="title">捏脸实验室</div>
-      <div class="sub">轻捏 · 拖拽 · 扭曲 · 拉伸</div>
+      <div class="title">FACE LAB</div>
+      <div class="sub">PINCH · DRAG · TWIST · STRETCH</div>
       <div class="modeRow">
-        <button class="modeBtn" id="mFree">自由挤压 <small>FREE SQUEEZE</small></button>
-        <button class="modeBtn" id="mChallenge">挑战模式 <small>CHALLENGE</small></button>
-        <button class="modeBtn locked" id="mRemix">角色混音 <small id="remixLock">通关挑战后解锁</small></button>
+        <button class="modeBtn" id="mFree">Free Squeeze <small>FREE SQUEEZE</small></button>
+        <button class="modeBtn" id="mChallenge">Challenge <small>CHALLENGE</small></button>
+        <button class="modeBtn locked" id="mRemix">Face Remix <small id="remixLock">Unlock by clearing challenges</small></button>
       </div>
       <div class="lb" id="lbMenu">
-        <h4>本地 TOP 10 变异人物</h4>
+        <h4>LOCAL TOP 10 MUTANTS</h4>
         <div id="lbList"></div>
       </div>
-      <button class="btn ghost" id="shareMenuBtn" style="margin-top:6px;">分享到社交媒体</button>
+      <button class="btn ghost" id="shareMenuBtn" style="margin-top:6px;">Share</button>
     </div>
 
-    <!-- 角色选择 -->
+    <!-- Character select -->
     <div id="charScreen" class="overlay hidden">
-      <div class="title" style="font-size:24px;">选择角色</div>
+      <div class="title" style="font-size:24px;">Choose Character</div>
       <div class="sub">CHOOSE A FACE TO MOLD</div>
       <div class="charGrid" id="charGrid"></div>
-      <button class="btn ghost" id="charBack">返回</button>
+      <button class="btn ghost" id="charBack">BACK</button>
     </div>
 
-    <!-- 挑战列表 -->
+    <!-- Challenge list -->
     <div id="chScreen" class="overlay hidden">
-      <div class="title" style="font-size:24px;">挑战任务</div>
+      <div class="title" style="font-size:24px;">Challenges</div>
       <div class="sub">COMPLETE THE DEFORMATION TASKS</div>
       <div class="chList" id="chList"></div>
-      <button class="btn ghost" id="chBack">返回</button>
+      <button class="btn ghost" id="chBack">BACK</button>
     </div>
 
-    <!-- 混音面板 -->
+    <!-- Remix panel -->
     <div id="remixScreen" class="overlay hidden">
-      <div class="title" style="font-size:24px;">角色混音</div>
+      <div class="title" style="font-size:24px;">Face Remix</div>
       <div class="sub">MIX FEATURES · WEIRDER = HIGHER</div>
       <div class="remixPanel" id="remixPanel"></div>
-      <button class="btn" id="remixStart">开始混音</button>
-      <button class="btn ghost" id="remixBack" style="margin-top:10px;">返回</button>
+      <button class="btn" id="remixStart">Start Remix</button>
+      <button class="btn ghost" id="remixBack" style="margin-top:10px;">BACK</button>
     </div>
 
-    <!-- 结果 -->
+    <!-- Result -->
     <div id="resultScreen" class="overlay hidden">
       <div class="logo" id="resLogo">RESULT</div>
       <div class="stars" id="resStars">★★★</div>
-      <div class="scoreRow">变形创意 <b id="resCreate">0</b></div>
-      <div class="scoreRow">搞笑程度 <b id="resFunny">0</b></div>
-      <div class="scoreRow" id="resBonusRow" style="display:none;">任务奖励 <b id="resBonus">0</b></div>
-      <div class="tag">总分</div>
+      <div class="scoreRow">Creativity <b id="resCreate">0</b></div>
+      <div class="scoreRow">Funniness <b id="resFunny">0</b></div>
+      <div class="scoreRow" id="resBonusRow" style="display:none;">Bonus <b id="resBonus">0</b></div>
+      <div class="tag">TOTAL</div>
       <div class="title" style="font-size:38px;" id="resTotal">0</div>
-      <button class="btn" id="resAgain" style="margin-top:22px;">再捏一次</button>
-      <button class="btn ghost" id="resShare" style="margin-top:10px;">分享</button>
-      <button class="btn ghost" id="resHome" style="margin-top:10px;">回主菜单</button>
+      <button class="btn" id="resAgain" style="margin-top:22px;">Play Again</button>
+      <button class="btn ghost" id="resShare" style="margin-top:10px;">Share</button>
+      <button class="btn ghost" id="resHome" style="margin-top:10px;">Main Menu</button>
     </div>
   </div>
 </div>
@@ -182,10 +182,11 @@
 <script>
 "use strict";
 /* =====================================================================
-   捏脸实验室 —— 软物理面部变形休闲游戏（单文件 HTML5）
-   物理：Verlet + 位置约束(PBD) + 弹性回弹；角色用 canvas 程序化绘制
+   Face Lab — Soft-body face deformation casual game (single-file HTML5)
+   Physics: Verlet + Position-Based Constraints (PBD) + elastic spring-back;
+   characters drawn procedurally on canvas.
    ===================================================================== */
-var LW=400, LH=711; // 逻辑画布 (9:16)
+var LW=400, LH=711; // logical canvas (9:16)
 
 var canvas=document.getElementById('game');
 var ctx=canvas.getContext('2d');
@@ -194,14 +195,14 @@ var dpr=1;
 function setupCanvas(){dpr=Math.min(window.devicePixelRatio||1,3);canvas.width=Math.floor(LW*dpr);canvas.height=Math.floor(LH*dpr);}
 function fitArea(){var sw=innerWidth,sh=innerHeight;var w=sh*9/16,h=sh;if(w>sw){w=sw;h=sw*16/9;}gameArea.style.width=Math.floor(w)+'px';gameArea.style.height=Math.floor(h)+'px';}
 
-/* ---------- 工具 ---------- */
+/* ---------- Helpers ---------- */
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
 function dist(ax,ay,bx,by){var dx=ax-bx,dy=ay-by;return Math.sqrt(dx*dx+dy*dy);}
 function hex2rgb(h){h=h.replace('#','');return [parseInt(h.substr(0,2),16),parseInt(h.substr(2,2),16),parseInt(h.substr(4,2),16)];}
 function shade(hex,amt){var c=hex2rgb(hex);return 'rgb('+clamp(c[0]+amt,0,255)+','+clamp(c[1]+amt,0,255)+','+clamp(c[2]+amt,0,255)+')';}
 function rgba(hex,a){var c=hex2rgb(hex);return 'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')';}
 
-/* ---------- Verlet 点 / 软物理 ---------- */
+/* ---------- Verlet point / soft physics ---------- */
 function Point(x,y,grp){this.x=x;this.y=y;this.px=x;this.py=y;this.rx=x;this.ry=y;this.grp=grp;this.drag=false;}
 Point.prototype.update=function(dt,damp){
   if(this.drag)return;
@@ -209,41 +210,41 @@ Point.prototype.update=function(dt,damp){
   this.px=this.x;this.py=this.y;
   this.x+=vx;this.y+=vy;
 };
-Point.prototype.springHome=function(k){ // 弹性回弹（弱，让变形慢慢恢复）
+Point.prototype.springHome=function(k){ // elastic spring-back (weak, lets deformation recover slowly)
   if(this.drag)return;
   this.x+=(this.rx-this.x)*k; this.y+=(this.ry-this.y)*k;
 };
 
-/* ---------- 角色：5 个原创角色，对应原型 ---------- */
-// 点名 -> 分组，决定混音时该点取哪个角色的静止坐标
+/* ---------- Characters: 5 original characters, matching the archetypes ---------- */
+// point name -> group; group decides which character's rest coords to use in remix
 var PT = {
-  // 脸轮廓 ring
+  // face outline ring
   topTop:['ring',200,140], topL:['ring',150,170], topR:['ring',250,170],
   sideL:['ring',135,280], sideR:['ring',265,280], cheekL:['ring',150,300], cheekR:['ring',250,300],
   jawL:['ring',165,420], jawR:['ring',235,420], chin:['ring',200,440], chinL:['ring',178,425], chinR:['ring',222,425],
-  // 眼 eyes
+  // eyes
   eyeL:['eyes',172,235], eyeR:['eyes',228,235], pupilL:['eyes',174,236], pupilR:['eyes',226,236],
   browL:['eyes',172,205], browR:['eyes',228,205],
-  // 鼻 nose
+  // nose
   noseBridge:['nose',200,215], noseTip:['nose',200,320], noseL:['nose',188,280], noseR:['nose',212,280],
   nostrilL:['nose',192,318], nostrilR:['nose',208,318],
-  // 嘴 mouth
+  // mouth
   mouthL:['mouth',170,390], mouthC:['mouth',200,398], mouthR:['mouth',230,390], mouthTop:['mouth',200,392], mouthBot:['mouth',200,410],
-  // 耳 ears
+  // ears
   earL:['ears',125,250], earR:['ears',275,250], earTipL:['ears',100,255], earTipR:['ears',300,255],
-  // 帽/发/头盔 hat
+  // hat / hair / helmet
   hatL:['hat',150,150], hatC:['hat',200,95], hatR:['hat',250,150], hatBrimL:['hat',100,155], hatBrimR:['hat',300,155],
-  // 须 whiskers
+  // whiskers
   whiskL1:['whiskers',150,360], whiskL2:['whiskers',158,375], whiskR1:['whiskers',250,360], whiskR2:['whiskers',242,375],
-  // 头盔 helmet
+  // helmet
   helmL:['hat',130,180], helmTop:['hat',200,80], helmR:['hat',270,180], helmBot:['hat',200,430], visorC:['hat',200,300]
 };
 
-// 角色对每个分组提供覆盖坐标（基于 PT 默认，再做个性化偏移）
+// Each character provides override coords per group (based on PT defaults, then personalized offsets)
 function ov(base, over){var o={};for(var k in base){var g=base[k][0];o[k]=[g, base[k][1], base[k][2]];}for(var k in over){o[k]=[over[k][0]??base[k][0], over[k][1], over[k][2]];}return o;}
 
 var CHARACTERS = [
-  { id:'critico', name:'Critico', title:'严苛美食家', emoji:'🧐',
+  { id:'critico', name:'Critico', title:'Stern Food Critic', emoji:'🧐',
     colors:{skin:'#e6c79c', skin2:'#caa074', hair:'#3a2a1a', feature:'#2a2a2a', accent:'#6b3b1a', mouth:'#7a2a2a'},
     feat:{ears:'small',hat:'hair',glasses:true,whiskers:false,helmet:false,smile:'flat'},
     ov: ov(PT,{topTop:['ring',200,120],topL:['ring',152,150],topR:['ring',248,150],sideL:['ring',142,260],sideR:['ring',258,260],
@@ -251,7 +252,7 @@ var CHARACTERS = [
       noseTip:['nose',200,335],noseL:['nose',190,285],noseR:['nose',210,285],nostrilL:['nose',194,333],nostrilR:['nose',206,333],
       mouthL:['mouth',172,390],mouthC:['mouth',200,398],mouthR:['mouth',228,390],
       hatL:['hat',150,120],hatC:['hat',200,80],hatR:['hat',250,120]}) },
-  { id:'rascal', name:'Rascal', title:'机灵鼠大厨', emoji:'🐭',
+  { id:'rascal', name:'Rascal', title:'Clever Rat Chef', emoji:'🐭',
     colors:{skin:'#9aa0a8', skin2:'#7a8088', feature:'#e7a0a8', accent:'#d8808a', mouth:'#7a2a2a'},
     feat:{ears:'big',hat:'none',glasses:false,whiskers:true,helmet:false,smile:'smug',
       snout:true},
@@ -264,7 +265,7 @@ var CHARACTERS = [
       mouthL:['mouth',184,322],mouthC:['mouth',200,326],mouthR:['mouth',216,322],
       whiskL1:['whiskers',150,300],whiskL2:['whiskers',158,315],whiskR1:['whiskers',250,300],whiskR2:['whiskers',242,315],
       hatC:['hat',200,150]}) },
-  { id:'noodle', name:'Noodle', title:'傻大个厨师', emoji:'🤪',
+  { id:'noodle', name:'Noodle', title:'Goofy Tall Chef', emoji:'🤪',
     colors:{skin:'#f0c8a0', skin2:'#d0a070', feature:'#c04020', accent:'#b03010', mouth:'#7a2a2a'},
     feat:{ears:'huge',hat:'hair',glasses:false,whiskers:false,helmet:false,smile:'goofy'},
     ov: ov(PT,{topTop:['ring',200,110],topL:['ring',165,140],topR:['ring',235,140],sideL:['ring',148,270],sideR:['ring',252,270],
@@ -275,7 +276,7 @@ var CHARACTERS = [
       noseBridge:['nose',200,200],noseTip:['nose',200,300],noseL:['nose',178,255],noseR:['nose',222,255],
       mouthL:['mouth',158,370],mouthC:['mouth',200,385],mouthR:['mouth',242,370],mouthBot:['mouth',200,415],
       hatL:['hat',155,115],hatC:['hat',200,70],hatR:['hat',245,115]}) },
-  { id:'ranger', name:'Ranger', title:'牛仔玩偶', emoji:'🤠',
+  { id:'ranger', name:'Ranger', title:'Cowboy Doll', emoji:'🤠',
     colors:{skin:'#e8b890', skin2:'#c89060', feature:'#caa040', accent:'#8a5a20', mouth:'#7a2a2a'},
     feat:{ears:'small',hat:'cowboy',glasses:false,whiskers:false,helmet:false,smile:'cheer'},
     ov: ov(PT,{topTop:['ring',200,155],topL:['ring',160,180],topR:['ring',240,180],sideL:['ring',140,285],sideR:['ring',260,285],
@@ -285,7 +286,7 @@ var CHARACTERS = [
       mouthL:['mouth',172,380],mouthC:['mouth',200,388],mouthR:['mouth',228,380],
       hatL:['hat',150,150],hatC:['hat',200,85],hatR:['hat',250,150],hatBrimL:['hat',100,158],hatBrimR:['hat',300,158],
       earL:['ears',128,255],earR:['ears',272,255]}) },
-  { id:'astro', name:'Astro', title:'太空英雄', emoji:'🚀',
+  { id:'astro', name:'Astro', title:'Space Hero', emoji:'🚀',
     colors:{skin:'#e8c0a0', skin2:'#c89070', feature:'#1f6b8a', accent:'#0a3a5a', visor:'#b0e8ff', mouth:'#7a2a2a'},
     feat:{ears:'none',hat:'helmet',glasses:false,whiskers:false,helmet:true,smile:'serious',jaw:'strong'},
     ov: ov(PT,{topTop:['ring',200,170],topL:['ring',165,200],topR:['ring',235,200],sideL:['ring',145,290],sideR:['ring',255,290],
@@ -298,37 +299,37 @@ var CHARACTERS = [
       helmL:['hat',120,200],helmTop:['hat',200,70],helmR:['hat',280,200],helmBot:['hat',200,440],visorC:['hat',200,300]}) }
 ];
 
-/* ---------- 邻接（共享拓扑） ---------- */
+/* ---------- Adjacency (shared topology) ---------- */
 var ADJ = [
-  // 脸轮廓环
+  // face outline ring
   ['topTop','topL'],['topL','sideL'],['sideL','jawL'],['jawL','chinL'],['chinL','chin'],['chin','chinR'],['chinR','jawR'],['jawR','sideR'],['sideR','topR'],['topR','topTop'],
   ['sideL','cheekL'],['cheekL','jawL'],['sideR','cheekR'],['cheekR','jawR'],
-  // 眼
+  // eyes
   ['eyeL','browL'],['eyeR','browR'],['eyeL','pupilL'],['eyeR','pupilR'],['eyeL','eyeR'],
   ['eyeL','cheekL'],['eyeR','cheekR'],
-  // 鼻
+  // nose
   ['noseBridge','noseTip'],['noseTip','noseL'],['noseTip','noseR'],['noseL','noseR'],['noseL','nostrilL'],['noseR','nostrilR'],
   ['noseBridge','eyeL'],['noseBridge','eyeR'],
-  // 嘴
+  // mouth
   ['mouthL','mouthC'],['mouthC','mouthR'],['mouthTop','mouthC'],['mouthBot','mouthC'],['mouthL','mouthTop'],['mouthR','mouthTop'],
   ['mouthC','noseTip'],['mouthL','cheekL'],['mouthR','cheekR'],
-  // 耳
+  // ears
   ['earL','sideL'],['earR','sideR'],['earTipL','earL'],['earTipR','earR'],
-  // 帽/发
+  // hat / hair
   ['hatL','hatC'],['hatC','hatR'],['hatL','topL'],['hatR','topR'],['hatBrimL','hatL'],['hatBrimR','hatR'],['hatBrimL','hatBrimR'],
-  // 须
+  // whiskers
   ['whiskL1','noseL'],['whiskL2','noseL'],['whiskR1','noseR'],['whiskR2','noseR'],
-  // 头盔
+  // helmet
   ['helmL','helmTop'],['helmTop','helmR'],['helmL','helmR'],['helmBot','helmL'],['helmBot','helmR'],['visorC','helmBot'],['visorC','noseTip']
 ];
 
-/* ---------- 构建网格（支持混音取分组坐标） ---------- */
+/* ---------- Build mesh (remix picks per-group coords) ---------- */
 var mesh={points:{},springs:[],springsByRest:[]};
 function groupRestCoord(grp, charId){
   var ch=CHARACTERS.find(function(c){return c.id===charId;});
   var coords=ch.ov;
   var first=CHARACTERS[0].ov;
-  // 收集该组所有点，以默认 ch 坐标；若该角色该点缺失则用第一角色默认
+  // collect all points of this group using the character's coords; fall back to first character
   var r={};
   for(var k in PT){ if(PT[k][0]===grp){ var c=coords[k]||first[k]||PT[k]; r[k]=[c[1],c[2]]; } }
   return r;
@@ -348,7 +349,7 @@ function buildMesh(featureSources){ // {ring:charId, eyes:charId, ...}
   }
 }
 
-/* ---------- 反馈系统 ---------- */
+/* ---------- Feedback system ---------- */
 var particles=[], ripples=[], shake=0, distort=0, lastDeform=0;
 function spawnParticles(x,y,color,n,spread){
   for(var i=0;i<n;i++){var a=Math.random()*Math.PI*2,sp=Math.random()*(spread||260)+40;
@@ -356,7 +357,7 @@ function spawnParticles(x,y,color,n,spread){
 }
 function spawnRipple(x,y,color){ripples.push({x:x,y:y,r:4,life:1,color:color||'#5ab0ff'});}
 
-/* ---------- 音效 (Web Audio) ---------- */
+/* ---------- Sound (Web Audio, synthesized in real time) ---------- */
 var audio=null;
 function ensureAudio(){if(!audio){try{audio=new (window.AudioContext||window.webkitAudioContext)();}catch(e){audio=null;}}if(audio&&audio.state==='suspended')audio.resume();}
 function tone(f,d,t,v,w){if(!audio)return;var n=audio.currentTime,o=audio.createOscillator(),g=audio.createGain();o.type=t||'sine';o.frequency.setValueAtTime(f,n);g.gain.setValueAtTime(.0001,n);g.gain.exponentialRampToValueAtTime(v||.18,n+.01);g.gain.exponentialRampToValueAtTime(.0001,n+d);o.connect(g);g.connect(audio.destination);o.start(n);o.stop(n+d+.03);}
@@ -367,14 +368,14 @@ function sndExtreme(){noise(.25,.35);tone(140,.3,'sawtooth',.2);}
 function sndScore(){tone(660,.1,'triangle',.2);setTimeout(function(){tone(990,.14,'triangle',.18);},90);}
 function sndWin(){var n=audio?audio.currentTime:0;tone(523,.12,'triangle',.22);tone(659,.12,'triangle',.22,n+.12);tone(880,.2,'triangle',.22,n+.24);}
 
-/* ---------- 游戏状态 ---------- */
+/* ---------- Game state ---------- */
 var mode='free', activeChar=CHARACTERS[0], challengeIdx=0, remixSrc={ring:'critico',eyes:'critico',nose:'critico',mouth:'critico',ears:'critico',hat:'critico',whiskers:'rascal'};
 var state='menu', elapsed=0, scoreAccum=0, creativity=0, funniness=0, bonus=0;
 var challengeTimer=0, challengeDone=false, challengeProgress=0;
 var CHALLENGES=[
-  {char:'critico', title:'让 Critico 微笑', desc:'把嘴角向上拉，让他露出笑容', metric:'smile', target:1},
-  {char:'rascal', title:'Rascal 鼻子变气球', desc:'把他的鼻尖拉伸到极限', metric:'noseStretch', target:1},
-  {char:'astro', title:'让 Astro 看起来很傻', desc:'扭曲头盔与下巴，彻底搞乱', metric:'silly', target:1}
+  {char:'critico', title:'Make Critico Smile', desc:'Pull the mouth corners up to make him smile', metric:'smile', target:1},
+  {char:'rascal', title:"Balloon Rascal's Nose", desc:'Stretch his nose tip to the limit', metric:'noseStretch', target:1},
+  {char:'astro', title:'Make Astro Look Silly', desc:'Warp the helmet and jaw — mess him up', metric:'silly', target:1}
 ];
 function cleared(){try{return JSON.parse(localStorage.getItem('face_cleared')||'[]');}catch(e){return[];}}
 function setCleared(i){var c=cleared();if(c.indexOf(i)<0)c.push(i);localStorage.setItem('face_cleared',JSON.stringify(c));}
@@ -383,7 +384,7 @@ function getLB(){try{return JSON.parse(localStorage.getItem('face_lb')||'[]');}c
 function addLB(rec){var lb=getLB();lb.push(rec);lb.sort(function(a,b){return b.score-a.score;});lb=lb.slice(0,10);localStorage.setItem('face_lb',JSON.stringify(lb));}
 function getBest(){return parseInt(localStorage.getItem('face_best')||'0',10)||0;}
 
-/* ---------- 输入：多指针拖拽 / 双指捏 ---------- */
+/* ---------- Input: multi-pointer drag / pinch ---------- */
 var pointers={};
 function getNearestPoint(x,y,radius){
   var best=null,bd=radius*radius;
@@ -423,10 +424,10 @@ window.addEventListener('pointerup',onUp);
 window.addEventListener('pointercancel',onUp);
 window.addEventListener('blur',function(){for(var k in pointers){if(pointers[k].pt)pointers[k].pt.drag=false;}pointers={};});
 
-/* 键盘 R 重置形状 */
+/* keyboard R resets the shape */
 window.addEventListener('keydown',function(e){if(state==='playing'&&(e.key==='r'||e.key==='R'))snapHome(true);});
 
-/* ---------- 物理 / 更新 ---------- */
+/* ---------- Physics / update ---------- */
 var DAMP=0.86, SPRINGK=0.022, PBD_ITERS=5;
 function snapHome(soft){
   for(var k in mesh.points){var p=mesh.points[k];p.px=p.x;p.py=p.y;if(!p.drag){if(soft){}else{p.x=p.rx;p.y=p.ry;p.px=p.rx;p.py=p.ry;}}}
@@ -451,7 +452,7 @@ function computeDeform(){
 function challengeMetric(m){
   var P=mesh.points;
   switch(m){
-    case 'smile': // 嘴角高于嘴中（y更小）= 笑
+    case 'smile': // mouth corners higher than center (smaller y) = smile
       return clamp(((P.mouthC.y-P.mouthL.y)+(P.mouthC.y-P.mouthR.y))/2/22,0,1);
     case 'noseStretch':
       var d=dist(P.noseTip.x,P.noseTip.y,P.noseBridge.x,P.noseBridge.y);
@@ -465,7 +466,7 @@ function challengeMetric(m){
 }
 
 function update(dt){
-  // 粒子 / 波纹 / 震动
+  // particles / ripples / shake
   for(var i=particles.length-1;i>=0;i--){var p=particles[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=420*dt;p.life-=dt*1.6;if(p.life<=0)particles.splice(i,1);}
   for(var i=ripples.length-1;i>=0;i--){var r=ripples[i];r.r+=120*dt;r.life-=dt*1.4;if(r.life<=0)ripples.splice(i,1);}
   if(shake>0)shake=Math.max(0,shake-dt*55);
@@ -482,23 +483,23 @@ function update(dt){
   lastDeform=df.total;
   creativity=clamp(df.total/180,0,1);
   funniness=clamp(df.maxStretch/0.9,0,1);
-  // 极端变形触发空间扭曲
+  // extreme deformation triggers spatial distortion
   if(df.maxStretch>1.0){distort=Math.min(1,distort+dt*2);if(Math.random()<dt*3){sndExtreme();shake=Math.max(shake,10);}}
-  // 拖拽中持续轻音效
+  // continuous soft sound while dragging
   var dragging=false;for(var k in pointers){if(pointers[k].pt){dragging=true;break;}}
   if(dragging&&Math.random()<dt*4) sndStretch(clamp(df.maxStretch,0,1));
 
-  // 计分累积
+  // accumulate score
   scoreAccum+=(creativity*8+funniness*6)*dt;
 
-  // 挑战
+  // challenge
   if(mode==='challenge'){
     challengeProgress=challengeMetric(CHALLENGES[challengeIdx].metric);
     var bar=document.getElementById('chBar');bar.style.width=(challengeProgress*100)+'%';
     challengeTimer-=dt;
-    document.getElementById('chTime').textContent='剩余 '+Math.max(0,Math.ceil(challengeTimer))+'s';
-    if(challengeProgress>=0.85&&!challengeDone){challengeDone=true;sndWin();showToast('挑战成功！'+activeChar.name+'：'+signatureLine());shake=18;spawnParticles(LW/2,LH*0.45,'#5aff96',30,260);}
-    if(challengeTimer<=0&&!challengeDone){challengeDone=true;showToast('时间到！继续创作吧');}
+    document.getElementById('chTime').textContent='Time left '+Math.max(0,Math.ceil(challengeTimer))+'s';
+    if(challengeProgress>=0.85&&!challengeDone){challengeDone=true;sndWin();showToast('Challenge Clear! '+activeChar.name+': '+signatureLine());shake=18;spawnParticles(LW/2,LH*0.45,'#5aff96',30,260);}
+    if(challengeTimer<=0&&!challengeDone){challengeDone=true;showToast("Time's up! Keep sculpting");}
     if(challengeDone&&challengeTimer<=0){setTimeout(finishGame,400);}
   }
   document.getElementById('scoreVal').textContent=Math.floor(scoreAccum);
@@ -506,44 +507,44 @@ function update(dt){
 
 function signatureLine(){
   var lines={
-    critico:['我不喜欢……但我笑了。','意想不到的美味。'],
-    rascal:['人人都能创作！','嗅嗅……这是快乐的味道！'],
-    noodle:['嘿嘿嘿！','哇哦！'],
-    ranger:['你是我最棒的搭档！','一路狂奔！'],
-    astro:['飞向快乐，无限远！','变形任务完成。']
+    critico:["I don't like it... but I smiled.",'Unexpectedly delicious.'],
+    rascal:['Anyone can create!','Sniff... it\'s the scent of joy!'],
+    noodle:['Hehehe!','Whoa!'],
+    ranger:["You're my best partner!",'Run wild!'],
+    astro:['To joy and beyond!','Deformation complete.']
   };
-  var l=lines[activeChar.id]||['哈哈！']; return l[Math.floor(Math.random()*l.length)];
+  var l=lines[activeChar.id]||['Haha!']; return l[Math.floor(Math.random()*l.length)];
 }
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}
 
-/* ---------- 渲染 ---------- */
+/* ---------- Rendering ---------- */
 var bgParticles=[];
 for(var i=0;i<30;i++)bgParticles.push({x:Math.random()*LW,y:Math.random()*LH,s:Math.random()*2+.5,sp:Math.random()*16+4,c:Math.random()});
 function drawBG(){
   var g=ctx.createLinearGradient(0,0,0,LH);
   g.addColorStop(0,shade(activeChar.colors.accent,-40));g.addColorStop(1,'#06060f');
-  // 蓝色基底需求：背景偏蓝
+  // blue base: keep the background blue-tinted
   var bg=ctx.createLinearGradient(0,0,0,LH);bg.addColorStop(0,'#1a3a6a');bg.addColorStop(.5,'#0e1d3a');bg.addColorStop(1,'#06060f');
   ctx.fillStyle=bg;ctx.fillRect(0,0,LW,LH);
-  // 动态背景粒子
+  // dynamic background particles
   for(var i=0;i<bgParticles.length;i++){var s=bgParticles[i];s.y+=s.sp*0.016;if(s.y>LH){s.y=-2;s.x=Math.random()*LW;}
     ctx.globalAlpha=.15+s.c*.25;ctx.fillStyle='#8fc0ff';ctx.fillRect(s.x,s.y,s.s,s.s);}
   ctx.globalAlpha=1;
 }
 function fillPath(pts,closed){ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(var i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);if(closed)ctx.closePath();}
 function drawEllipseFace(P){
-  // 脸轮廓填充
+  // face outline fill
   var pts=[P.topTop,P.topL,P.sideL,P.cheekL,P.jawL,P.chinL,P.chin,P.chinR,P.jawR,P.cheekR,P.sideR,P.topR];
   fillPath(pts,true);
   var grd=ctx.createRadialGradient(P.noseBridge.x,P.noseBridge.y,10,P.chin.x,P.chin.y,220);
   grd.addColorStop(0,activeChar.colors.skin2);grd.addColorStop(1,shade(activeChar.colors.skin,-30));
   ctx.fillStyle=grd;ctx.fill();
-  // 描边
+  // outline stroke
   ctx.lineWidth=2;ctx.strokeStyle=rgba('#000000',.18);ctx.stroke();
 }
 function drawFeature(P){
   var C=activeChar.colors, F=activeChar.feat;
-  // 耳朵
+  // ears
   if(F.ears==='big'||F.ears==='huge'){
     var es=F.ears==='huge'?1.4:1;
     ctx.fillStyle=C.skin2;
@@ -555,7 +556,7 @@ function drawFeature(P){
     ctx.fillStyle=C.skin2;ctx.beginPath();ctx.arc(P.earL.x,P.earL.y,10*1,0,7);ctx.fill();
     ctx.beginPath();ctx.arc(P.earR.x,P.earR.y,10,0,7);ctx.fill();
   }
-  // 帽/发/头盔（先画在脸后/侧）
+  // hat / hair / helmet (drawn behind/around the face first)
   if(F.hat==='cowboy'){
     ctx.fillStyle=C.feature;
     fillPath([P.hatBrimL,P.hatBrimR,P.hatR,P.hatC,P.hatL],true);ctx.fill();
@@ -565,7 +566,7 @@ function drawFeature(P){
     fillPath([P.topTop,P.topL,P.hatL,P.hatC,P.hatR,P.topR],true);ctx.fill();
   }
   if(F.helmet){
-    // 头盔外圈
+    // helmet outer shell
     ctx.save();
     ctx.beginPath();ctx.moveTo(P.helmL.x,P.helmL.y);
     ctx.quadraticCurveTo(P.helmTop.x,P.helmTop.y,P.helmR.x,P.helmR.y);
@@ -575,7 +576,7 @@ function drawFeature(P){
     hg.addColorStop(0,shade(C.feature,40));hg.addColorStop(1,shade(C.feature,-30));
     ctx.fillStyle=hg;ctx.fill();
     ctx.lineWidth=3;ctx.strokeStyle=rgba('#000',.25);ctx.stroke();
-    // 面罩光泽
+    // visor sheen
     ctx.beginPath();ctx.moveTo(P.helmL.x,P.helmL.y);
     ctx.quadraticCurveTo(P.helmTop.x,P.helmTop.y,P.helmR.x,P.helmR.y);
     ctx.lineTo(P.helmR.x,P.helmR.y+40);
@@ -584,37 +585,37 @@ function drawFeature(P){
     ctx.fillStyle=rgba(C.visor||'#b0e8ff',.25);ctx.fill();
     ctx.restore();
   }
-  // 脸
+  // face
   drawEllipseFace(P);
-  // 眉
+  // brows
   ctx.strokeStyle=shade(C.feature,-20);ctx.lineWidth=5;ctx.lineCap='round';
   ctx.beginPath();ctx.moveTo(P.browL.x-10,P.browL.y);ctx.lineTo(P.browL.x+10,P.browL.y);ctx.stroke();
   ctx.beginPath();ctx.moveTo(P.browR.x-10,P.browR.y);ctx.lineTo(P.browR.x+10,P.browR.y);ctx.stroke();
-  // 眼白
+  // eye whites
   ctx.fillStyle='#fff';
   ctx.beginPath();ctx.ellipse(P.eyeL.x,P.eyeL.y,11,9,0,0,7);ctx.fill();
   ctx.beginPath();ctx.ellipse(P.eyeR.x,P.eyeR.y,11,9,0,0,7);ctx.fill();
-  // 瞳孔
+  // pupils
   ctx.fillStyle='#222';
   ctx.beginPath();ctx.arc(P.pupilL.x,P.pupilL.y,5,0,7);ctx.fill();
   ctx.beginPath();ctx.arc(P.pupilR.x,P.pupilR.y,5,0,7);ctx.fill();
-  // 眼镜
+  // glasses
   if(F.glasses){ctx.strokeStyle='#222';ctx.lineWidth=3;
     ctx.beginPath();ctx.arc(P.eyeL.x,P.eyeL.y,16,0,7);ctx.stroke();
     ctx.beginPath();ctx.arc(P.eyeR.x,P.eyeR.y,16,0,7);ctx.stroke();
     ctx.beginPath();ctx.moveTo(P.eyeL.x+16,P.eyeL.y);ctx.lineTo(P.eyeR.x-16,P.eyeR.y);ctx.stroke();}
-  // 鼻子
+  // nose
   ctx.fillStyle=shade(C.skin,-15);
   fillPath([P.noseBridge,P.noseL,P.noseTip,P.nostrilL,P.nostrilR,P.noseR],true);ctx.fill();
   if(F.snout){ctx.fillStyle=C.feature;ctx.beginPath();ctx.arc(P.noseTip.x,P.noseTip.y,8,0,7);ctx.fill();}
-  // 嘴
+  // mouth
   ctx.fillStyle=C.mouth;
   var mouthPts=[P.mouthL,P.mouthTop,P.mouthC,P.mouthBot,P.mouthR];
   fillPath(mouthPts,true);ctx.fill();
   ctx.strokeStyle=rgba('#000',.25);ctx.lineWidth=2;ctx.stroke();
-  // 牙（傻笑）
+  // teeth (goofy grin)
   if(F.smile==='goofy'){ctx.fillStyle='#fff';fillPath([P.mouthTop,P.mouthC,P.mouthBot],true);ctx.fill();}
-  // 胡须
+  // whiskers
   if(F.whiskers){ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.lineCap='round';
     ctx.beginPath();ctx.moveTo(P.noseL.x,P.noseL.y);ctx.lineTo(P.whiskL1.x,P.whiskL1.y);ctx.stroke();
     ctx.beginPath();ctx.moveTo(P.noseL.x,P.noseL.y);ctx.lineTo(P.whiskL2.x,P.whiskL2.y);ctx.stroke();
@@ -622,14 +623,14 @@ function drawFeature(P){
     ctx.beginPath();ctx.moveTo(P.noseR.x,P.noseR.y);ctx.lineTo(P.whiskR2.x,P.whiskR2.y);ctx.stroke();}
 }
 function drawDeformOverlay(){
-  // 变形拉伸线（高拉伸弹簧）
+  // deformation stretch lines (highly stretched springs)
   ctx.strokeStyle=rgba('#5ab0ff',.5);ctx.lineWidth=2;
   for(var i=0;i<mesh.springs.length;i++){var s=mesh.springs[i];var d=dist(s.a.x,s.a.y,s.b.x,s.b.y);var r=d/s.rest;if(r>1.5){
     ctx.beginPath();ctx.moveTo(s.a.x,s.a.y);ctx.lineTo(s.b.x,s.b.y);ctx.stroke();}}
-  // 粒子
+  // particles
   for(var i=0;i<particles.length;i++){var p=particles[i];ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,7);ctx.fill();}
   ctx.globalAlpha=1;
-  // 波纹
+  // ripples
   for(var i=0;i<ripples.length;i++){var r=ripples[i];ctx.globalAlpha=Math.max(0,r.life*0.5);ctx.strokeStyle=r.color;ctx.lineWidth=3;ctx.beginPath();ctx.arc(r.x,r.y,r.r,0,7);ctx.stroke();}
   ctx.globalAlpha=1;
 }
@@ -644,25 +645,25 @@ function render(){
     drawDeformOverlay();
   }
   ctx.restore();
-  // 空间扭曲（极端变形）：画布外层轻微 skew
+  // spatial distortion (extreme deformation): subtle skew on the outer canvas
   if(distort>0){gameArea.style.transform='skew('+(Math.sin(Date.now()/60)*distort*3)+'deg,'+(Math.cos(Date.now()/70)*distort*3)+'deg) scale('+(1-distort*0.02)+')';}
   else gameArea.style.transform='';
 }
 
-/* ---------- 主循环 ---------- */
+/* ---------- Main loop ---------- */
 var lastT=performance.now();
 function loop(ts){var dt=(ts-lastT)/1000;lastT=ts;if(dt>0.05)dt=0.05;update(dt);render();requestAnimationFrame(loop);}
 
-/* ---------- 流程控制 ---------- */
+/* ---------- Flow control ---------- */
 var menuScreen=document.getElementById('menuScreen'),charScreen=document.getElementById('charScreen'),
     chScreen=document.getElementById('chScreen'),remixScreen=document.getElementById('remixScreen'),
     resultScreen=document.getElementById('resultScreen');
 function show(el){[menuScreen,charScreen,chScreen,remixScreen,resultScreen].forEach(function(s){s.classList.add('hidden');});if(el)el.classList.remove('hidden');}
 
 function renderLB(){var lb=getLB();var el=document.getElementById('lbList');el.innerHTML='';
-  if(!lb.length){el.innerHTML='<div class="lbEmpty">还没有记录，去捏个脸吧！</div>';return;}
+  if(!lb.length){el.innerHTML='<div class="lbEmpty">No records yet — go mold a face!</div>';return;}
   lb.forEach(function(r,i){var d=document.createElement('div');d.className='lbItem';d.innerHTML='<span>'+(i+1)+'. '+r.name+' <span style="color:rgba(255,255,255,.4)">· '+r.mode+'</span></span><span class="r">'+r.score+'</span>';el.appendChild(d);});}
-function refreshUnlocks(){var rem=document.getElementById('mRemix');if(remixUnlocked()){rem.classList.remove('locked');document.getElementById('remixLock').textContent='MIX & MATCH';}else{rem.classList.add('locked');document.getElementById('remixLock').textContent='通关挑战后解锁';}
+function refreshUnlocks(){var rem=document.getElementById('mRemix');if(remixUnlocked()){rem.classList.remove('locked');document.getElementById('remixLock').textContent='MIX & MATCH';}else{rem.classList.add('locked');document.getElementById('remixLock').textContent='Unlock by clearing challenges';}
   document.getElementById('bestVal').textContent=getBest();}
 
 function openMenu(){state='menu';show(menuScreen);renderLB();refreshUnlocks();document.getElementById('hud').classList.add('hidden');document.getElementById('challenge').style.display='none';document.getElementById('playHint').classList.add('hidden');}
@@ -679,7 +680,7 @@ function openChallenge(){show(chScreen);var list=document.getElementById('chList
     d.onclick=function(){challengeIdx=i;activeChar=c;startChallenge();};list.appendChild(d);});}
 
 function openRemix(){if(!remixUnlocked())return;show(remixScreen);var panel=document.getElementById('remixPanel');panel.innerHTML='';
-  var groups=[['ring','脸型'],['eyes','眼睛'],['nose','鼻子'],['mouth','嘴巴'],['ears','耳朵'],['hat','帽子/发'],['whiskers','胡须']];
+  var groups=[['ring','Face'],['eyes','Eyes'],['nose','Nose'],['mouth','Mouth'],['ears','Ears'],['hat','Hat/Hair'],['whiskers','Whiskers']];
   groups.forEach(function(g){
     var row=document.createElement('div');row.className='remixRow';row.innerHTML='<span>'+g[1]+'</span><div class="seg" id="seg-'+g[0]+'"></div>';
     panel.appendChild(row);var seg=row.querySelector('.seg');
@@ -693,13 +694,13 @@ function startRemix(){
   var byId=function(id){return CHARACTERS.find(function(c){return c.id===id;})||CHARACTERS[0];};
   var ring=byId(remixSrc.ring), eyes=byId(remixSrc.eyes), nose=byId(remixSrc.nose),
       mouth=byId(remixSrc.mouth), ears=byId(remixSrc.ears), hat=byId(remixSrc.hat), wh=byId(remixSrc.whiskers);
-  // 合并视觉特征：各部位取自其来源角色，配色以脸型角色为基底
+  // merge visual features: each part taken from its source character, colors based on the face character
   var mergedFeat={
     ears:ears.feat.ears, hat:hat.feat.hat, helmet:hat.feat.helmet,
     whiskers:wh.feat.whiskers, glasses:eyes.feat.glasses,
     smile:mouth.feat.smile, snout:nose.feat.snout, jaw:ring.feat.jaw
   };
-  activeChar={id:'remix',name:'混音怪物',emoji:'🧩',title:'DIY 变种',colors:ring.colors,feat:mergedFeat,ov:ring.ov};
+  activeChar={id:'remix',name:'Remix Monster',emoji:'🧩',title:'DIY Mutant',colors:ring.colors,feat:mergedFeat,ov:ring.ov};
   buildMesh(remixSrc);beginPlay();
 }
 function buildMeshFromChar(c){var src={};for(var k in remixSrc)src[k]=c.id;buildMesh(src);}
@@ -718,8 +719,8 @@ function finishGame(){
   var total=Math.floor(scoreAccum);
   if(mode==='challenge'&&challengeProgress>=0.85){bonus=200;total+=bonus;setCleared(challengeIdx);}
   if(total>getBest())localStorage.setItem('face_best',String(total));
-  addLB({name:activeChar.name+'★',mode:mode==='free'?'自由':'挑战',score:total});
-  // 星级
+  addLB({name:activeChar.name+'★',mode:mode==='free'?'Free':'Challenge',score:total});
+  // star rating
   var st=1;if(creativity>0.4)st=2;if(creativity>0.7||funniness>0.6)st=3;
   document.getElementById('resStars').textContent='★'.repeat(st)+'☆'.repeat(3-st);
   document.getElementById('resCreate').textContent=Math.floor(creativity*100);
@@ -747,12 +748,12 @@ document.getElementById('shareMenuBtn').onclick=shareGame;
 
 function shareGame(){
   var total=document.getElementById('resTotal').textContent||Math.floor(scoreAccum)||0;
-  var text='我在《捏脸实验室》把'+activeChar.name+'捏出了'+total+'分！你也来试试 →';
-  if(navigator.share){navigator.share({title:'捏脸实验室',text:text}).catch(function(){});}
-  else{showToast('已复制：'+text);try{navigator.clipboard.writeText(text);}catch(e){}}
+  var text='I scored '+total+' molding '+activeChar.name+' in Face Lab! Try it →';
+  if(navigator.share){navigator.share({title:'Face Lab',text:text}).catch(function(){});}
+  else{showToast('Copied: '+text);try{navigator.clipboard.writeText(text);}catch(e){}}
 }
 
-/* ---------- 初始化 ---------- */
+/* ---------- Init ---------- */
 window.addEventListener('resize',function(){fitArea();setupCanvas();});
 window.addEventListener('orientationchange',function(){setTimeout(function(){fitArea();setupCanvas();},250);});
 setupCanvas();fitArea();
