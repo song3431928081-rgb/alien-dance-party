@@ -3,102 +3,76 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#0a0a1a">
-<title>Face Lab · Soft Body Deformation</title>
+<meta name="theme-color" content="#ffffff">
+<title>Alien Dance Party</title>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{width:100%;height:100%;overflow:hidden;background:#06060f;color:#fff;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
-    user-select:none;-webkit-user-select:none;touch-action:none;}
-  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-    background:radial-gradient(ellipse at center,#11112a 0%,#06060f 75%);}
-  #gameArea{position:relative;overflow:hidden;border-radius:18px;
-    box-shadow:0 0 0 1px rgba(255,255,255,.08),0 30px 80px rgba(0,0,0,.7);background:#0c1230;
-    transform:translateZ(0);transition:transform .05s linear;}
-  canvas{display:block;width:100%;height:100%;cursor:grab;}
-  canvas.dragging{cursor:grabbing;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;background:#fff;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  user-select:none;-webkit-user-select:none;touch-action:none;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#fff;}
+#gameArea{position:relative;overflow:hidden;background:#fff;
+  box-shadow:0 0 0 1px rgba(0,0,0,.04);background:#ffffff;}
+canvas{display:block;width:100%;height:100%;cursor:pointer;will-change:transform;}
 
-  /* top HUD */
-  #hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;
-    align-items:center;padding:12px 14px;pointer-events:none;z-index:6;}
-  .pill{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(6px);
-    -webkit-backdrop-filter:blur(6px);border-radius:10px;padding:6px 12px;font-size:11px;color:rgba(255,255,255,.7);
-    letter-spacing:1px;display:flex;align-items:center;gap:8px;}
-  .pill b{color:#fff;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;}
-  #backBtn{pointer-events:auto;cursor:pointer;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);
-    color:#fff;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:600;letter-spacing:1px;}
-  #backBtn:active{transform:scale(.94);}
+/* Top stats */
+#topBar{position:absolute;top:0;left:0;right:0;padding:10px 14px;z-index:5;pointer-events:none;
+  display:flex;justify-content:space-between;align-items:center;}
+.stat{background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.08);border-radius:10px;
+  padding:5px 11px;font-size:11px;font-weight:700;color:#333;display:flex;align-items:center;gap:5px;
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
+.stat .ico{font-size:14px;}
+.stat .num{font-variant-numeric:tabular-nums;min-width:14px;text-align:center;}
 
-  /* challenge progress bar */
-  #challenge{position:absolute;top:50px;left:14px;right:14px;z-index:6;pointer-events:none;
-    background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px 12px;
-    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;}
-  #chTitle{font-size:12px;color:#fff;font-weight:600;margin-bottom:6px;}
-  #chBarWrap{height:8px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;}
-  #chBar{height:100%;width:0%;background:linear-gradient(90deg,#5ab0ff,#9a6bff);border-radius:5px;transition:width .15s;}
-  #chTime{font-size:10px;color:rgba(255,255,255,.55);margin-top:5px;text-align:right;}
+/* Combo badge */
+#comboBadge{position:absolute;top:48px;left:50%;transform:translateX(-50%) scale(0);
+  background:linear-gradient(135deg,#39ff14,#b026ff);color:#fff;font-size:13px;font-weight:800;
+  padding:6px 16px;border-radius:20px;z-index:6;pointer-events:none;letter-spacing:1px;
+  box-shadow:0 4px 16px rgba(176,38,255,.3);transition:transform .3s cubic-bezier(.34,1.56,.64,1);}
+#comboBadge.show{transform:translateX(-50%) scale(1);}
 
-  /* overlay layer */
-  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    text-align:center;z-index:10;background:rgba(6,6,15,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:22px;overflow-y:auto;}
-  .logo{font-size:13px;letter-spacing:5px;color:rgba(255,255,255,.45);margin-bottom:4px;}
-  .title{font-size:34px;font-weight:800;letter-spacing:2px;margin-bottom:4px;
-    background:linear-gradient(90deg,#5ab0ff,#9a6bff,#ff6b9d);-webkit-background-clip:text;background-clip:text;color:transparent;}
-  .sub{font-size:12px;color:rgba(255,255,255,.5);letter-spacing:2px;margin-bottom:26px;}
-  .modeRow{display:flex;flex-direction:column;gap:12px;width:100%;max-width:280px;}
-  .modeBtn{padding:15px;border:none;border-radius:14px;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;
-    color:#06121f;background:linear-gradient(135deg,#5ab0ff,#7d6bff);box-shadow:0 10px 26px rgba(90,176,255,.32);
-    transition:transform .12s,box-shadow .12s;display:flex;flex-direction:column;align-items:center;gap:2px;}
-  .modeBtn:active{transform:scale(.95);}
-  .modeBtn small{font-size:10px;font-weight:600;opacity:.7;letter-spacing:1px;}
-  .modeBtn.locked{background:rgba(255,255,255,.08);color:rgba(255,255,255,.35);box-shadow:none;cursor:not-allowed;}
-  .modeBtn.locked small{color:rgba(255,255,255,.3);}
+/* Bottom control bar — Loopit style */
+#bottomBar{position:absolute;bottom:0;left:0;right:0;padding:10px 16px 14px;z-index:8;
+  display:flex;align-items:center;justify-content:space-around;gap:8px;
+  background:linear-gradient(to top,rgba(255,255,255,.95) 60%,rgba(255,255,255,0));
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+.bb-btn{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;
+  background:none;border:none;font-size:9px;font-weight:700;color:#666;letter-spacing:.5px;
+  transition:transform .12s;-webkit-tap-highlight-color:transparent;}
+.bb-btn:active{transform:scale(.88);}
+.bb-icon{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:19px;background:rgba(0,0,0,.05);border:1px solid rgba(0,0,0,.06);transition:all .2s;}
+.bb-btn.active .bb-icon{background:linear-gradient(135deg,#39ff14,#b026ff);color:#fff;border-color:transparent;
+  box-shadow:0 4px 14px rgba(176,38,255,.35);}
+.bb-btn.primary .bb-icon{width:48px;height:48px;font-size:24px;
+  background:linear-gradient(135deg,#39ff14,#b026ff);color:#fff;border:none;
+  box-shadow:0 6px 20px rgba(176,38,255,.4);}
 
-  .charGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:300px;margin-bottom:18px;}
-  .charCard{border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.05);
-    padding:14px 6px;cursor:pointer;transition:transform .12s,border-color .12s;text-align:center;}
-  .charCard:active{transform:scale(.95);}
-  .charCard .av{width:48px;height:48px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:24px;}
-  .charCard .nm{font-size:12px;font-weight:700;}
-  .charCard .tt{font-size:9px;color:rgba(255,255,255,.45);margin-top:2px;}
+/* Copy/share button */
+#copyBtn{position:absolute;top:10px;right:14px;z-index:7;pointer-events:auto;
+  background:linear-gradient(135deg,#39ff14,#b026ff);border:none;border-radius:20px;
+  padding:7px 14px;font-size:11px;font-weight:800;color:#fff;letter-spacing:1px;cursor:pointer;
+  display:flex;align-items:center;gap:5px;box-shadow:0 4px 14px rgba(176,38,255,.35);
+  transition:transform .12s;}
+#copyBtn:active{transform:scale(.92);}
 
-  .chList{display:flex;flex-direction:column;gap:10px;width:100%;max-width:280px;margin-bottom:18px;}
-  .chItem{border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.05);padding:12px 14px;cursor:pointer;text-align:left;}
-  .chItem:active{transform:scale(.97);}
-  .chItem .ct{font-size:13px;font-weight:700;}
-  .chItem .cd{font-size:11px;color:rgba(255,255,255,.5);margin-top:3px;}
-  .chItem.done{border-color:rgba(90,255,150,.5);background:rgba(90,255,150,.08);}
-  .chItem.done .ct::after{content:" ✓";color:#5aff96;}
+/* Toast */
+#toast{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);
+  background:rgba(20,20,30,.88);color:#fff;font-size:13px;font-weight:600;padding:10px 22px;
+  border-radius:14px;z-index:20;opacity:0;transition:all .3s;pointer-events:none;text-align:center;max-width:80%;}
+#toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
 
-  /* remix mode segment group */
-  .remixPanel{width:100%;max-width:300px;margin-bottom:14px;}
-  .remixRow{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:11px;}
-  .remixRow span{width:54px;color:rgba(255,255,255,.6);}
-  .seg{flex:1;display:flex;background:rgba(255,255,255,.06);border-radius:8px;padding:2px;}
-  .seg button{flex:1;border:none;background:transparent;color:rgba(255,255,255,.5);font-size:10px;padding:5px 2px;border-radius:6px;cursor:pointer;font-weight:600;}
-  .seg button.on{background:#5ab0ff;color:#06121f;}
-
-  .btn{padding:13px 38px;border:none;border-radius:12px;font-size:15px;font-weight:700;letter-spacing:2px;cursor:pointer;
-    color:#06121f;background:linear-gradient(135deg,#5ab0ff,#7d6bff);box-shadow:0 10px 26px rgba(90,176,255,.32);}
-  .btn:active{transform:scale(.95);}
-  .btn.ghost{background:rgba(255,255,255,.08);color:#fff;box-shadow:none;}
-
-  .stars{font-size:30px;letter-spacing:6px;margin:4px 0 6px;}
-  .scoreRow{font-size:13px;color:rgba(255,255,255,.7);margin-bottom:4px;}
-  .scoreRow b{color:#fff;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;}
-  .tag{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:1px;margin-bottom:18px;}
-
-  .lb{width:100%;max-width:280px;margin:14px 0 18px;text-align:left;}
-  .lb h4{font-size:11px;letter-spacing:2px;color:rgba(255,255,255,.5);margin-bottom:8px;text-align:center;}
-  .lbItem{display:flex;justify-content:space-between;font-size:12px;padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.06);}
-  .lbItem .r{color:rgba(255,255,255,.4);font-variant-numeric:tabular-nums;}
-  .lbEmpty{text-align:center;font-size:11px;color:rgba(255,255,255,.3);padding:14px;}
-
-  .hint{position:absolute;bottom:16px;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,255,255,.35);letter-spacing:1px;z-index:5;pointer-events:none;}
-  .toast{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.15);
-    border-radius:14px;padding:16px 26px;font-size:15px;font-weight:700;z-index:20;opacity:0;transition:opacity .25s;text-align:center;max-width:80%;}
-  .toast.show{opacity:1;}
-  .hidden{display:none!important;}
+/* Hint overlay */
+#hintOverlay{position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;background:rgba(255,255,255,.92);
+  transition:opacity .4s;}
+#hintOverlay.hide{opacity:0;pointer-events:none;}
+.hint-title{font-size:26px;font-weight:800;letter-spacing:1px;margin-bottom:6px;
+  background:linear-gradient(135deg,#39ff14,#b026ff);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hint-sub{font-size:12px;color:#999;margin-bottom:28px;line-height:1.6;}
+.hint-tap{font-size:11px;color:#bbb;margin-top:18px;}
+.alien-preview{width:80px;height:80px;margin-bottom:12px;animation:bob 1.4s ease-in-out infinite;}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-4deg);}50%{transform:translateY(-12px) rotate(4deg);}}
 </style>
 </head>
 <body>
@@ -106,75 +80,30 @@
   <div id="gameArea">
     <canvas id="game"></canvas>
 
-    <div id="hud" class="hidden">
-      <div class="pill">SCORE <b id="scoreVal">0</b></div>
-      <button id="backBtn" class="hidden">BACK</button>
-      <div class="pill" id="bestPill">BEST <b id="bestVal">0</b></div>
+    <div id="topBar">
+      <div class="stat"><span class="ico">👽</span><span class="num" id="countStat">0</span></div>
+      <div class="stat"><span class="ico">🎵</span><span class="num" id="comboStat">1x</span></div>
     </div>
 
-    <div id="challenge">
-      <div id="chTitle">TASK</div>
-      <div id="chBarWrap"><div id="chBar"></div></div>
-      <div id="chTime"></div>
+    <button id="copyBtn">🛸 COPY</button>
+
+    <div id="comboBadge">DANCE x<span id="comboNum">1</span></div>
+    <div id="toast"></div>
+
+    <div id="bottomBar">
+      <button class="bb-btn" id="btnAuto"><div class="bb-icon">⏩</div>AUTO</button>
+      <button class="bb-btn" id="btnChaos"><div class="bb-icon">🌀</div>CHAOS</button>
+      <button class="bb-btn primary" id="btnAdd"><div class="bb-icon">➕</div>ADD</button>
+      <button class="bb-btn" id="btnPhoto"><div class="bb-icon">📸</div>PHOTO</button>
+      <button class="bb-btn" id="btnClear"><div class="bb-icon">🗑️</div>CLEAR</button>
     </div>
 
-    <div class="hint" id="playHint">Drag or pinch the face · release to bounce back</div>
-    <div class="toast" id="toast"></div>
-
-    <!-- Main menu -->
-    <div id="menuScreen" class="overlay">
-      <div class="logo">SOFT BODY FACE LAB</div>
-      <div class="title">FACE LAB</div>
-      <div class="sub">PINCH · DRAG · TWIST · STRETCH</div>
-      <div class="modeRow">
-        <button class="modeBtn" id="mFree">Free Squeeze <small>FREE SQUEEZE</small></button>
-        <button class="modeBtn" id="mChallenge">Challenge <small>CHALLENGE</small></button>
-        <button class="modeBtn locked" id="mRemix">Face Remix <small id="remixLock">Unlock by clearing challenges</small></button>
-      </div>
-      <div class="lb" id="lbMenu">
-        <h4>LOCAL TOP 10 MUTANTS</h4>
-        <div id="lbList"></div>
-      </div>
-      <button class="btn ghost" id="shareMenuBtn" style="margin-top:6px;">Share</button>
-    </div>
-
-    <!-- Character select -->
-    <div id="charScreen" class="overlay hidden">
-      <div class="title" style="font-size:24px;">Choose Character</div>
-      <div class="sub">CHOOSE A FACE TO MOLD</div>
-      <div class="charGrid" id="charGrid"></div>
-      <button class="btn ghost" id="charBack">BACK</button>
-    </div>
-
-    <!-- Challenge list -->
-    <div id="chScreen" class="overlay hidden">
-      <div class="title" style="font-size:24px;">Challenges</div>
-      <div class="sub">COMPLETE THE DEFORMATION TASKS</div>
-      <div class="chList" id="chList"></div>
-      <button class="btn ghost" id="chBack">BACK</button>
-    </div>
-
-    <!-- Remix panel -->
-    <div id="remixScreen" class="overlay hidden">
-      <div class="title" style="font-size:24px;">Face Remix</div>
-      <div class="sub">MIX FEATURES · WEIRDER = HIGHER</div>
-      <div class="remixPanel" id="remixPanel"></div>
-      <button class="btn" id="remixStart">Start Remix</button>
-      <button class="btn ghost" id="remixBack" style="margin-top:10px;">BACK</button>
-    </div>
-
-    <!-- Result -->
-    <div id="resultScreen" class="overlay hidden">
-      <div class="logo" id="resLogo">RESULT</div>
-      <div class="stars" id="resStars">★★★</div>
-      <div class="scoreRow">Creativity <b id="resCreate">0</b></div>
-      <div class="scoreRow">Funniness <b id="resFunny">0</b></div>
-      <div class="scoreRow" id="resBonusRow" style="display:none;">Bonus <b id="resBonus">0</b></div>
-      <div class="tag">TOTAL</div>
-      <div class="title" style="font-size:38px;" id="resTotal">0</div>
-      <button class="btn" id="resAgain" style="margin-top:22px;">Play Again</button>
-      <button class="btn ghost" id="resShare" style="margin-top:10px;">Share</button>
-      <button class="btn ghost" id="resHome" style="margin-top:10px;">Main Menu</button>
+    <div id="hintOverlay">
+      <div class="alien-preview" id="previewAlien"></div>
+      <div class="hint-title">Alien Dance Party</div>
+      <div class="hint-sub">Tap anywhere to spawn dancing aliens<br>Drag aliens to move &amp; arrange them<br>More aliens = faster dance party!</div>
+      <button class="bb-btn primary" id="btnStart" style="background:none;border:none;"><div class="bb-icon" style="background:linear-gradient(135deg,#39ff14,#b026ff);color:#fff;border:none;box-shadow:0 6px 20px rgba(176,38,255,.4);">▶</div>START</button>
+      <div class="hint-tap">Tap to begin the party</div>
     </div>
   </div>
 </div>
@@ -182,584 +111,700 @@
 <script>
 "use strict";
 /* =====================================================================
-   Face Lab — Soft-body face deformation casual game (single-file HTML5)
-   Physics: Verlet + Position-Based Constraints (PBD) + elastic spring-back;
-   characters drawn procedurally on canvas.
+   Alien Dance Party — Casual tap-dance alien spawning game (single-file HTML5)
+   Original character & gameplay. Tap to spawn, drag to arrange, dance together.
    ===================================================================== */
-var LW=400, LH=711; // logical canvas (9:16)
-
+var LW=400, LH=711;
 var canvas=document.getElementById('game');
-var ctx=canvas.getContext('2d');
+var ctx=canvas.getContext('2d',{alpha:false});
 var gameArea=document.getElementById('gameArea');
 var dpr=1;
-function setupCanvas(){dpr=Math.min(window.devicePixelRatio||1,3);canvas.width=Math.floor(LW*dpr);canvas.height=Math.floor(LH*dpr);}
-function fitArea(){var sw=innerWidth,sh=innerHeight;var w=sh*9/16,h=sh;if(w>sw){w=sw;h=sw*16/9;}gameArea.style.width=Math.floor(w)+'px';gameArea.style.height=Math.floor(h)+'px';}
+var canvasRect={left:0,top:0,width:LW,height:LH}; // cached, updated on resize/scroll only
 
-/* ---------- Helpers ---------- */
+function setupCanvas(){
+  dpr=Math.min(window.devicePixelRatio||1,2); // cap at 2 for performance
+  canvas.width=Math.floor(LW*dpr);
+  canvas.height=Math.floor(LH*dpr);
+}
+function fitArea(){
+  var sw=innerWidth,sh=innerHeight;
+  var w=sh*9/16,h=sh;
+  if(w>sw){w=sw;h=sw*16/9;}
+  gameArea.style.width=Math.floor(w)+'px';
+  gameArea.style.height=Math.floor(h)+'px';
+  updateCanvasRect();
+}
+function updateCanvasRect(){
+  var r=canvas.getBoundingClientRect();
+  canvasRect={left:r.left,top:r.top,width:r.width||LW,height:r.height||LH};
+}
+
+/* ---------- Utilities ---------- */
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
-function dist(ax,ay,bx,by){var dx=ax-bx,dy=ay-by;return Math.sqrt(dx*dx+dy*dy);}
-function hex2rgb(h){h=h.replace('#','');return [parseInt(h.substr(0,2),16),parseInt(h.substr(2,2),16),parseInt(h.substr(4,2),16)];}
-function shade(hex,amt){var c=hex2rgb(hex);return 'rgb('+clamp(c[0]+amt,0,255)+','+clamp(c[1]+amt,0,255)+','+clamp(c[2]+amt,0,255)+')';}
-function rgba(hex,a){var c=hex2rgb(hex);return 'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')';}
+function lerp(a,b,t){return a+(b-a)*t;}
+function rand(a,b){return a+Math.random()*(b-a);}
+function dist(x1,y1,x2,y2){var dx=x1-x2,dy=y1-y2;return Math.sqrt(dx*dx+dy*dy);}
 
-/* ---------- Verlet point / soft physics ---------- */
-function Point(x,y,grp){this.x=x;this.y=y;this.px=x;this.py=y;this.rx=x;this.ry=y;this.grp=grp;this.drag=false;}
-Point.prototype.update=function(dt,damp){
-  if(this.drag)return;
-  var vx=(this.x-this.px)*damp, vy=(this.y-this.py)*damp;
-  this.px=this.x;this.py=this.y;
-  this.x+=vx;this.y+=vy;
-};
-Point.prototype.springHome=function(k){ // elastic spring-back (weak, lets deformation recover slowly)
-  if(this.drag)return;
-  this.x+=(this.rx-this.x)*k; this.y+=(this.ry-this.y)*k;
-};
-
-/* ---------- Characters: 5 original characters, matching the archetypes ---------- */
-// point name -> group; group decides which character's rest coords to use in remix
-var PT = {
-  // face outline ring
-  topTop:['ring',200,140], topL:['ring',150,170], topR:['ring',250,170],
-  sideL:['ring',135,280], sideR:['ring',265,280], cheekL:['ring',150,300], cheekR:['ring',250,300],
-  jawL:['ring',165,420], jawR:['ring',235,420], chin:['ring',200,440], chinL:['ring',178,425], chinR:['ring',222,425],
-  // eyes
-  eyeL:['eyes',172,235], eyeR:['eyes',228,235], pupilL:['eyes',174,236], pupilR:['eyes',226,236],
-  browL:['eyes',172,205], browR:['eyes',228,205],
-  // nose
-  noseBridge:['nose',200,215], noseTip:['nose',200,320], noseL:['nose',188,280], noseR:['nose',212,280],
-  nostrilL:['nose',192,318], nostrilR:['nose',208,318],
-  // mouth
-  mouthL:['mouth',170,390], mouthC:['mouth',200,398], mouthR:['mouth',230,390], mouthTop:['mouth',200,392], mouthBot:['mouth',200,410],
-  // ears
-  earL:['ears',125,250], earR:['ears',275,250], earTipL:['ears',100,255], earTipR:['ears',300,255],
-  // hat / hair / helmet
-  hatL:['hat',150,150], hatC:['hat',200,95], hatR:['hat',250,150], hatBrimL:['hat',100,155], hatBrimR:['hat',300,155],
-  // whiskers
-  whiskL1:['whiskers',150,360], whiskL2:['whiskers',158,375], whiskR1:['whiskers',250,360], whiskR2:['whiskers',242,375],
-  // helmet
-  helmL:['hat',130,180], helmTop:['hat',200,80], helmR:['hat',270,180], helmBot:['hat',200,430], visorC:['hat',200,300]
-};
-
-// Each character provides override coords per group (based on PT defaults, then personalized offsets)
-function ov(base, over){var o={};for(var k in base){var g=base[k][0];o[k]=[g, base[k][1], base[k][2]];}for(var k in over){o[k]=[over[k][0]??base[k][0], over[k][1], over[k][2]];}return o;}
-
-var CHARACTERS = [
-  { id:'critico', name:'Critico', title:'Stern Food Critic', emoji:'🧐',
-    colors:{skin:'#e6c79c', skin2:'#caa074', hair:'#3a2a1a', feature:'#2a2a2a', accent:'#6b3b1a', mouth:'#7a2a2a'},
-    feat:{ears:'small',hat:'hair',glasses:true,whiskers:false,helmet:false,smile:'flat'},
-    ov: ov(PT,{topTop:['ring',200,120],topL:['ring',152,150],topR:['ring',248,150],sideL:['ring',142,260],sideR:['ring',258,260],
-      jawL:['ring',168,400],jawR:['ring',232,400],chin:['ring',200,445],chinL:['ring',176,425],chinR:['ring',224,425],
-      noseTip:['nose',200,335],noseL:['nose',190,285],noseR:['nose',210,285],nostrilL:['nose',194,333],nostrilR:['nose',206,333],
-      mouthL:['mouth',172,390],mouthC:['mouth',200,398],mouthR:['mouth',228,390],
-      hatL:['hat',150,120],hatC:['hat',200,80],hatR:['hat',250,120]}) },
-  { id:'rascal', name:'Rascal', title:'Clever Rat Chef', emoji:'🐭',
-    colors:{skin:'#9aa0a8', skin2:'#7a8088', feature:'#e7a0a8', accent:'#d8808a', mouth:'#7a2a2a'},
-    feat:{ears:'big',hat:'none',glasses:false,whiskers:true,helmet:false,smile:'smug',
-      snout:true},
-    ov: ov(PT,{topTop:['ring',200,170],topL:['ring',172,185],topR:['ring',228,185],sideL:['ring',150,260],sideR:['ring',250,260],
-      jawL:['ring',180,330],jawR:['ring',220,330],chin:['ring',200,345],chinL:['ring',188,340],chinR:['ring',212,340],
-      cheekL:['ring',150,290],cheekR:['ring',250,290],
-      earL:['ears',140,165],earR:['ears',260,165],earTipL:['ears',108,135],earTipR:['ears',292,135],
-      eyeL:['eyes',178,235],eyeR:['eyes',222,235],pupilL:['eyes',180,236],pupilR:['eyes',220,236],
-      noseBridge:['nose',200,250],noseTip:['nose',200,305],noseL:['nose',190,288],noseR:['nose',210,288],nostrilL:['nose',193,303],nostrilR:['nose',207,303],
-      mouthL:['mouth',184,322],mouthC:['mouth',200,326],mouthR:['mouth',216,322],
-      whiskL1:['whiskers',150,300],whiskL2:['whiskers',158,315],whiskR1:['whiskers',250,300],whiskR2:['whiskers',242,315],
-      hatC:['hat',200,150]}) },
-  { id:'noodle', name:'Noodle', title:'Goofy Tall Chef', emoji:'🤪',
-    colors:{skin:'#f0c8a0', skin2:'#d0a070', feature:'#c04020', accent:'#b03010', mouth:'#7a2a2a'},
-    feat:{ears:'huge',hat:'hair',glasses:false,whiskers:false,helmet:false,smile:'goofy'},
-    ov: ov(PT,{topTop:['ring',200,110],topL:['ring',165,140],topR:['ring',235,140],sideL:['ring',148,270],sideR:['ring',252,270],
-      jawL:['ring',170,415],jawR:['ring',230,415],chin:['ring',200,435],chinL:['ring',176,425],chinR:['ring',224,425],
-      cheekL:['ring',145,300],cheekR:['ring',255,300],
-      earL:['ears',128,250],earR:['ears',272,250],earTipL:['ears',92,245],earTipR:['ears',308,245],
-      eyeL:['eyes',172,210],eyeR:['eyes',228,210],pupilL:['eyes',174,212],pupilR:['eyes',226,212],
-      noseBridge:['nose',200,200],noseTip:['nose',200,300],noseL:['nose',178,255],noseR:['nose',222,255],
-      mouthL:['mouth',158,370],mouthC:['mouth',200,385],mouthR:['mouth',242,370],mouthBot:['mouth',200,415],
-      hatL:['hat',155,115],hatC:['hat',200,70],hatR:['hat',245,115]}) },
-  { id:'ranger', name:'Ranger', title:'Cowboy Doll', emoji:'🤠',
-    colors:{skin:'#e8b890', skin2:'#c89060', feature:'#caa040', accent:'#8a5a20', mouth:'#7a2a2a'},
-    feat:{ears:'small',hat:'cowboy',glasses:false,whiskers:false,helmet:false,smile:'cheer'},
-    ov: ov(PT,{topTop:['ring',200,155],topL:['ring',160,180],topR:['ring',240,180],sideL:['ring',140,285],sideR:['ring',260,285],
-      jawL:['ring',168,410],jawR:['ring',232,410],chin:['ring',200,430],chinL:['ring',176,420],chinR:['ring',224,420],
-      cheekL:['ring',150,305],cheekR:['ring',250,305],
-      eyeL:['eyes',172,235],eyeR:['eyes',228,235],pupilL:['eyes',174,237],pupilR:['eyes',226,237],
-      mouthL:['mouth',172,380],mouthC:['mouth',200,388],mouthR:['mouth',228,380],
-      hatL:['hat',150,150],hatC:['hat',200,85],hatR:['hat',250,150],hatBrimL:['hat',100,158],hatBrimR:['hat',300,158],
-      earL:['ears',128,255],earR:['ears',272,255]}) },
-  { id:'astro', name:'Astro', title:'Space Hero', emoji:'🚀',
-    colors:{skin:'#e8c0a0', skin2:'#c89070', feature:'#1f6b8a', accent:'#0a3a5a', visor:'#b0e8ff', mouth:'#7a2a2a'},
-    feat:{ears:'none',hat:'helmet',glasses:false,whiskers:false,helmet:true,smile:'serious',jaw:'strong'},
-    ov: ov(PT,{topTop:['ring',200,170],topL:['ring',165,200],topR:['ring',235,200],sideL:['ring',145,290],sideR:['ring',255,290],
-      jawL:['ring',168,400],jawR:['ring',232,400],chin:['ring',200,425],chinL:['ring',176,415],chinR:['ring',224,415],
-      cheekL:['ring',150,300],cheekR:['ring',250,300],
-      eyeL:['eyes',174,245],eyeR:['eyes',226,245],pupilL:['eyes',176,247],pupilR:['eyes',224,247],
-      browL:['eyes',174,220],browR:['eyes',226,220],
-      noseBridge:['nose',200,230],noseTip:['nose',200,320],noseL:['nose',190,280],noseR:['nose',210,280],
-      mouthL:['mouth',176,375],mouthC:['mouth',200,383],mouthR:['mouth',224,375],
-      helmL:['hat',120,200],helmTop:['hat',200,70],helmR:['hat',280,200],helmBot:['hat',200,440],visorC:['hat',200,300]}) }
-];
-
-/* ---------- Adjacency (shared topology) ---------- */
-var ADJ = [
-  // face outline ring
-  ['topTop','topL'],['topL','sideL'],['sideL','jawL'],['jawL','chinL'],['chinL','chin'],['chin','chinR'],['chinR','jawR'],['jawR','sideR'],['sideR','topR'],['topR','topTop'],
-  ['sideL','cheekL'],['cheekL','jawL'],['sideR','cheekR'],['cheekR','jawR'],
-  // eyes
-  ['eyeL','browL'],['eyeR','browR'],['eyeL','pupilL'],['eyeR','pupilR'],['eyeL','eyeR'],
-  ['eyeL','cheekL'],['eyeR','cheekR'],
-  // nose
-  ['noseBridge','noseTip'],['noseTip','noseL'],['noseTip','noseR'],['noseL','noseR'],['noseL','nostrilL'],['noseR','nostrilR'],
-  ['noseBridge','eyeL'],['noseBridge','eyeR'],
-  // mouth
-  ['mouthL','mouthC'],['mouthC','mouthR'],['mouthTop','mouthC'],['mouthBot','mouthC'],['mouthL','mouthTop'],['mouthR','mouthTop'],
-  ['mouthC','noseTip'],['mouthL','cheekL'],['mouthR','cheekR'],
-  // ears
-  ['earL','sideL'],['earR','sideR'],['earTipL','earL'],['earTipR','earR'],
-  // hat / hair
-  ['hatL','hatC'],['hatC','hatR'],['hatL','topL'],['hatR','topR'],['hatBrimL','hatL'],['hatBrimR','hatR'],['hatBrimL','hatBrimR'],
-  // whiskers
-  ['whiskL1','noseL'],['whiskL2','noseL'],['whiskR1','noseR'],['whiskR2','noseR'],
-  // helmet
-  ['helmL','helmTop'],['helmTop','helmR'],['helmL','helmR'],['helmBot','helmL'],['helmBot','helmR'],['visorC','helmBot'],['visorC','noseTip']
-];
-
-/* ---------- Build mesh (remix picks per-group coords) ---------- */
-var mesh={points:{},springs:[],springsByRest:[]};
-function groupRestCoord(grp, charId){
-  var ch=CHARACTERS.find(function(c){return c.id===charId;});
-  var coords=ch.ov;
-  var first=CHARACTERS[0].ov;
-  // collect all points of this group using the character's coords; fall back to first character
-  var r={};
-  for(var k in PT){ if(PT[k][0]===grp){ var c=coords[k]||first[k]||PT[k]; r[k]=[c[1],c[2]]; } }
-  return r;
-}
-function buildMesh(featureSources){ // {ring:charId, eyes:charId, ...}
-  mesh.points={}; mesh.springs=[]; mesh.springsByRest=[];
-  for(var k in PT){
-    var grp=PT[k][0];
-    var src=featureSources[grp]||featureSources.ring||CHARACTERS[0].id;
-    var ch=CHARACTERS.find(function(c){return c.id===src;});
-    var c=ch.ov[k]||PT[k];
-    mesh.points[k]=new Point(c[1],c[2],grp);
-  }
-  for(var i=0;i<ADJ.length;i++){
-    var a=mesh.points[ADJ[i][0]], b=mesh.points[ADJ[i][1]];
-    if(a&&b){ mesh.springs.push({a:a,b:b,rest:dist(a.rx,a.ry,b.rx,b.ry)}); }
-  }
-}
-
-/* ---------- Feedback system ---------- */
-var particles=[], ripples=[], shake=0, distort=0, lastDeform=0;
-function spawnParticles(x,y,color,n,spread){
-  for(var i=0;i<n;i++){var a=Math.random()*Math.PI*2,sp=Math.random()*(spread||260)+40;
-    particles.push({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-40,life:1,color:color,size:Math.random()*3.5+1.5});}
-}
-function spawnRipple(x,y,color){ripples.push({x:x,y:y,r:4,life:1,color:color||'#5ab0ff'});}
-
-/* ---------- Sound (Web Audio, synthesized in real time) ---------- */
-var audio=null;
-function ensureAudio(){if(!audio){try{audio=new (window.AudioContext||window.webkitAudioContext)();}catch(e){audio=null;}}if(audio&&audio.state==='suspended')audio.resume();}
-function tone(f,d,t,v,w){if(!audio)return;var n=audio.currentTime,o=audio.createOscillator(),g=audio.createGain();o.type=t||'sine';o.frequency.setValueAtTime(f,n);g.gain.setValueAtTime(.0001,n);g.gain.exponentialRampToValueAtTime(v||.18,n+.01);g.gain.exponentialRampToValueAtTime(.0001,n+d);o.connect(g);g.connect(audio.destination);o.start(n);o.stop(n+d+.03);}
-function noise(d,v){if(!audio)return;var n=audio.currentTime,len=Math.floor(audio.sampleRate*d),buf=audio.createBuffer(1,len,audio.sampleRate),da=buf.getChannelData(0);for(var i=0;i<len;i++)da[i]=(Math.random()*2-1)*(1-i/len);var s=audio.createBufferSource();s.buffer=buf;var f=audio.createBiquadFilter();f.type='lowpass';f.frequency.value=1200;var g=audio.createGain();g.gain.setValueAtTime(v||.3,n);g.gain.exponentialRampToValueAtTime(.0001,n+d);s.connect(f);f.connect(g);g.connect(audio.destination);s.start(n);s.stop(n+d);}
-function sndGrab(){tone(220,.06,'square',.08,'square');}
-function sndStretch(intensity){tone(300+intensity*400,.1,'sawtooth',.06,'sawtooth');}
-function sndExtreme(){noise(.25,.35);tone(140,.3,'sawtooth',.2);}
-function sndScore(){tone(660,.1,'triangle',.2);setTimeout(function(){tone(990,.14,'triangle',.18);},90);}
-function sndWin(){var n=audio?audio.currentTime:0;tone(523,.12,'triangle',.22);tone(659,.12,'triangle',.22,n+.12);tone(880,.2,'triangle',.22,n+.24);}
-
-/* ---------- Game state ---------- */
-var mode='free', activeChar=CHARACTERS[0], challengeIdx=0, remixSrc={ring:'critico',eyes:'critico',nose:'critico',mouth:'critico',ears:'critico',hat:'critico',whiskers:'rascal'};
-var state='menu', elapsed=0, scoreAccum=0, creativity=0, funniness=0, bonus=0;
-var challengeTimer=0, challengeDone=false, challengeProgress=0;
-var CHALLENGES=[
-  {char:'critico', title:'Make Critico Smile', desc:'Pull the mouth corners up to make him smile', metric:'smile', target:1},
-  {char:'rascal', title:"Balloon Rascal's Nose", desc:'Stretch his nose tip to the limit', metric:'noseStretch', target:1},
-  {char:'astro', title:'Make Astro Look Silly', desc:'Warp the helmet and jaw — mess him up', metric:'silly', target:1}
-];
-function cleared(){try{return JSON.parse(localStorage.getItem('face_cleared')||'[]');}catch(e){return[];}}
-function setCleared(i){var c=cleared();if(c.indexOf(i)<0)c.push(i);localStorage.setItem('face_cleared',JSON.stringify(c));}
-function remixUnlocked(){return cleared().length>=CHALLENGES.length;}
-function getLB(){try{return JSON.parse(localStorage.getItem('face_lb')||'[]');}catch(e){return[];}}
-function addLB(rec){var lb=getLB();lb.push(rec);lb.sort(function(a,b){return b.score-a.score;});lb=lb.slice(0,10);localStorage.setItem('face_lb',JSON.stringify(lb));}
-function getBest(){return parseInt(localStorage.getItem('face_best')||'0',10)||0;}
-
-/* ---------- Input: multi-pointer drag / pinch ---------- */
-var pointers={};
-function getNearestPoint(x,y,radius){
-  var best=null,bd=radius*radius;
-  for(var k in mesh.points){var p=mesh.points[k];var dx=p.x-x,dy=p.y-y;var d=dx*dx+dy*dy;if(d<bd){bd=d;best=p;}}
-  return best;
-}
-function canvasPos(e){
-  var rect=canvas.getBoundingClientRect();
-  var x=(e.clientX-rect.left)/rect.width*LW, y=(e.clientY-rect.top)/rect.height*LH;
-  return {x:x,y:y};
-}
-function onDown(e){
-  e.preventDefault(); ensureAudio();
-  if(state!=='playing')return;
-  var pos=canvasPos(e); pointers[e.pointerId]=pos;
-  var p=getNearestPoint(pos.x,pos.y,40);
-  if(p){p.drag=true;p.x=pos.x;p.y=pos.y;p.px=pos.x;p.py=pos.y; pointers[e.pointerId].pt=p; sndGrab(); spawnRipple(pos.x,pos.y,activeChar.colors.accent); spawnParticles(pos.x,pos.y,activeChar.colors.feature,6,120);}
-  if(Object.keys(pointers).length>=2) spawnRipple(LW/2,LH*0.45,'#9a6bff');
-}
-function onMove(e){
-  e.preventDefault();
-  if(state!=='playing')return;
-  var pp=pointers[e.pointerId]; if(!pp)return;
-  var pos=canvasPos(e); pp.x=pos.x; pp.y=pos.y;
-  if(pp.pt){ pp.pt.x=pos.x; pp.pt.y=pos.y; pp.pt.px=pos.x; pp.pt.py=pos.y;
-    if(Math.random()<0.4) spawnParticles(pos.x,pos.y,activeChar.colors.feature,1,80);
-  }
-}
-function onUp(e){
-  e.preventDefault();
-  var pp=pointers[e.pointerId]; if(pp&&pp.pt){pp.pt.drag=false;}
-  delete pointers[e.pointerId];
-}
-canvas.addEventListener('pointerdown',onDown);
-canvas.addEventListener('pointermove',onMove);
-window.addEventListener('pointerup',onUp);
-window.addEventListener('pointercancel',onUp);
-window.addEventListener('blur',function(){for(var k in pointers){if(pointers[k].pt)pointers[k].pt.drag=false;}pointers={};});
-
-/* keyboard R resets the shape */
-window.addEventListener('keydown',function(e){if(state==='playing'&&(e.key==='r'||e.key==='R'))snapHome(true);});
-
-/* ---------- Physics / update ---------- */
-var DAMP=0.86, SPRINGK=0.022, PBD_ITERS=5;
-function snapHome(soft){
-  for(var k in mesh.points){var p=mesh.points[k];p.px=p.x;p.py=p.y;if(!p.drag){if(soft){}else{p.x=p.rx;p.y=p.ry;p.px=p.rx;p.py=p.ry;}}}
-}
-function solveConstraints(){
-  for(var it=0;it<PBD_ITERS;it++){
-    for(var i=0;i<mesh.springs.length;i++){
-      var s=mesh.springs[i],a=s.a,b=s.b;
-      var dx=b.x-a.x,dy=b.y-a.y;var d=Math.sqrt(dx*dx+dy*dy)||0.01;
-      var diff=(d-s.rest)/d*0.5;
-      var mx=dx*diff,my=dy*diff;
-      if(!a.drag){a.x+=mx;a.y+=my;} if(!b.drag){b.x-=mx;b.y-=my;}
+/* ---------- Audio (Web Audio API, fully synthesized) ---------- */
+var audio=null, noiseBuf=null;
+function ensureAudio(){
+  if(!audio){try{audio=new (window.AudioContext||window.webkitAudioContext)();}catch(e){audio=null;}}
+  if(audio){
+    if(audio.state==='suspended')audio.resume();
+    if(!noiseBuf){ // pre-allocate noise buffer once, reuse forever
+      var len=Math.floor(audio.sampleRate*0.1);
+      noiseBuf=audio.createBuffer(1,len,audio.sampleRate);
+      var d=noiseBuf.getChannelData(0);
+      for(var i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);
     }
   }
 }
-function computeDeform(){
-  var total=0,maxStretch=0;
-  for(var i=0;i<mesh.springs.length;i++){var s=mesh.springs[i];var d=dist(s.a.x,s.a.y,s.b.x,s.b.y);var r=d/s.rest;var ext=Math.abs(r-1);total+=ext;if(ext>maxStretch)maxStretch=ext;}
-  for(var k in mesh.points){var p=mesh.points[k];total+=Math.abs(p.x-p.rx)+Math.abs(p.y-p.ry);}
-  return {total:total,maxStretch:maxStretch};
+function tone(freq,dur,type,vol,delay){
+  if(!audio)return;var n=audio.currentTime+(delay||0);
+  var o=audio.createOscillator();o.type=type||'sine';o.frequency.value=freq;
+  var g=audio.createGain();g.gain.setValueAtTime(0,n);g.gain.linearRampToValueAtTime(vol||0.08,n+0.01);
+  g.gain.exponentialRampToValueAtTime(0.001,n+dur);
+  o.connect(g);g.connect(audio.destination);o.start(n);o.stop(n+dur+0.05);
 }
-function challengeMetric(m){
-  var P=mesh.points;
-  switch(m){
-    case 'smile': // mouth corners higher than center (smaller y) = smile
-      return clamp(((P.mouthC.y-P.mouthL.y)+(P.mouthC.y-P.mouthR.y))/2/22,0,1);
-    case 'noseStretch':
-      var d=dist(P.noseTip.x,P.noseTip.y,P.noseBridge.x,P.noseBridge.y);
-      var r=dist(P.noseTip.rx,P.noseTip.ry,P.noseBridge.rx,P.noseBridge.ry);
-      return clamp((d/r-1)/1.5,0,1);
-    case 'silly':
-      var df=computeDeform();
-      return clamp(df.total/260,0,1);
+function noiseBurst(dur,freq,vol){
+  if(!audio||!noiseBuf)return;var n=audio.currentTime;
+  var s=audio.createBufferSource();s.buffer=noiseBuf;s.loop=false;
+  s.playbackRate.value=noiseBuf.duration/dur; // adjust pitch by speed
+  var f=audio.createBiquadFilter();f.type='lowpass';f.frequency.value=freq||800;
+  var g=audio.createGain();g.gain.value=vol||0.06;
+  s.connect(f);f.connect(g);g.connect(audio.destination);s.start(n);s.stop(n+dur);
+}
+var ufoHum=null;
+function startHum(){if(!audio||ufoHum)return;var o=audio.createOscillator();o.type='sawtooth';o.frequency.value=55;
+  var f=audio.createBiquadFilter();f.type='lowpass';f.frequency.value=200;
+  var g=audio.createGain();g.gain.value=0.015;
+  o.connect(f);f.connect(g);g.connect(audio.destination);o.start();ufoHum={osc:o,gain:g};}
+function stopHum(){if(ufoHum){try{ufoHum.osc.stop();}catch(e){}ufoHum=null;}}
+
+function sndSpawn(){tone(220,.08,'square',.06);tone(330,.1,'square',.05,.04);noiseBurst(.08,600,.04);}
+function sndSquelch(){noiseBurst(.06,400,.05);tone(150,.08,'sawtooth',.04);}
+function sndZap(){tone(880,.05,'square',.05);tone(660,.06,'square',.04,.03);}
+function sndLaugh(){tone(300,.05,'sawtooth',.05);tone(400,.05,'sawtooth',.05,.06);tone(350,.06,'sawtooth',.04,.12);}
+function sndBeat(intensity){
+  var f=200+intensity*100;
+  tone(f,.06,'square',.04);noiseBurst(.04,300,.02);
+}
+function sndPop(){tone(440,.04,'sine',.06);tone(660,.05,'sine',.05,.03);}
+function sndClear(){tone(330,.06,'sawtooth',.05);tone(220,.08,'sawtooth',.04,.06);tone(110,.12,'sawtooth',.03,.12);}
+function sndPhoto(){tone(1000,.02,'square',.06);tone(1200,.03,'sine',.05,.04);noiseBurst(.06,2000,.04);}
+
+/* ---------- Pre-rendered glow sprite (replaces expensive shadowBlur) ---------- */
+var glowCanvas=document.createElement('canvas');
+glowCanvas.width=40;glowCanvas.height=40;
+var glowCtx=glowCanvas.getContext('2d');
+(function(){var g=glowCtx.createRadialGradient(20,20,2,20,20,20);
+  g.addColorStop(0,'rgba(255,255,255,0.9)');g.addColorStop(0.3,'rgba(255,255,255,0.4)');
+  g.addColorStop(1,'rgba(255,255,255,0)');glowCtx.fillStyle=g;
+  glowCtx.fillRect(0,0,40,40);})();
+
+/* ---------- Alien character (original design) ---------- */
+// Cute laughing alien: tentacle head, glowing color-shift eyes, slimy blob body
+function Alien(x,y){
+  this.x=x;this.y=y;this.vx=0;this.vy=0;
+  this.tx=x;this.ty=y;
+  this.scale=rand(.7,1.1);
+  this.targetScale=this.scale;
+  this.rotation=rand(-.3,.3);
+  this.targetRotation=this.rotation;
+  this.bodyR=rand(28,36);
+  this.bodySquash=1;this.bodySquashY=1;
+  this.colorPhase=rand(0,Math.PI*2);
+  this.eyeColorPhase=rand(0,Math.PI*2);
+  this.tentacleCount=5+Math.floor(rand(0,3));
+  this.tentacles=[];
+  for(var i=0;i<this.tentacleCount;i++){
+    this.tentacles.push({angle:Math.PI*2*i/this.tentacleCount+rand(-.2,.2),len:rand(30,50),wave:rand(0,Math.PI*2),waveSpeed:rand(2,4)});
   }
-  return 0;
+  this.dancePhase=rand(0,Math.PI*2);
+  this.danceMove=Math.floor(rand(0,3));
+  this.danceTimer=rand(1,3);
+  this.bob=rand(0,Math.PI*2);
+  this.bobSpeed=rand(1.5,3);
+  this.dragging=false;
+  this.dragOffX=0;this.dragOffY=0;
+  this.spawnTime=0;
+  this.alpha=0;
+  this.mouthOpen=0;
+  this.happiness=1;
+  this.glow=1;
+  this.id=Math.random();
+  // cached color values (updated in update, used in draw)
+  this._r=57;this._g=255;this._b=20;
+  this._eyeIdx=0;
 }
-
-function update(dt){
-  // particles / ripples / shake
-  for(var i=particles.length-1;i>=0;i--){var p=particles[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=420*dt;p.life-=dt*1.6;if(p.life<=0)particles.splice(i,1);}
-  for(var i=ripples.length-1;i>=0;i--){var r=ripples[i];r.r+=120*dt;r.life-=dt*1.4;if(r.life<=0)ripples.splice(i,1);}
-  if(shake>0)shake=Math.max(0,shake-dt*55);
-  if(distort>0)distort=Math.max(0,distort-dt*2.2);
-
-  if(state!=='playing')return;
-
-  elapsed+=dt;
-  for(var k in mesh.points) mesh.points[k].update(dt,DAMP);
-  solveConstraints();
-  for(var k in mesh.points) mesh.points[k].springHome(SPRINGK);
-
-  var df=computeDeform();
-  lastDeform=df.total;
-  creativity=clamp(df.total/180,0,1);
-  funniness=clamp(df.maxStretch/0.9,0,1);
-  // extreme deformation triggers spatial distortion
-  if(df.maxStretch>1.0){distort=Math.min(1,distort+dt*2);if(Math.random()<dt*3){sndExtreme();shake=Math.max(shake,10);}}
-  // continuous soft sound while dragging
-  var dragging=false;for(var k in pointers){if(pointers[k].pt){dragging=true;break;}}
-  if(dragging&&Math.random()<dt*4) sndStretch(clamp(df.maxStretch,0,1));
-
-  // accumulate score
-  scoreAccum+=(creativity*8+funniness*6)*dt;
-
-  // challenge
-  if(mode==='challenge'){
-    challengeProgress=challengeMetric(CHALLENGES[challengeIdx].metric);
-    var bar=document.getElementById('chBar');bar.style.width=(challengeProgress*100)+'%';
-    challengeTimer-=dt;
-    document.getElementById('chTime').textContent='Time left '+Math.max(0,Math.ceil(challengeTimer))+'s';
-    if(challengeProgress>=0.85&&!challengeDone){challengeDone=true;sndWin();showToast('Challenge Clear! '+activeChar.name+': '+signatureLine());shake=18;spawnParticles(LW/2,LH*0.45,'#5aff96',30,260);}
-    if(challengeTimer<=0&&!challengeDone){challengeDone=true;showToast("Time's up! Keep sculpting");}
-    if(challengeDone&&challengeTimer<=0){setTimeout(finishGame,400);}
+Alien.prototype.update=function(dt,beatPhase,danceSpeed){
+  this.spawnTime+=dt;
+  this.alpha=Math.min(1,this.spawnTime*3);
+  // float / anti-gravity bob
+  if(!this.dragging){
+    this.bob+=dt*this.bobSpeed;
+    this.x+=Math.sin(this.bob*0.7)*0.3;
+    this.y+=Math.cos(this.bob)*0.4;
   }
-  document.getElementById('scoreVal').textContent=Math.floor(scoreAccum);
-}
+  // smooth to target (drag position or settle)
+  this.x+=(this.tx-this.x)*0.18;
+  this.y+=(this.ty-this.y)*0.18;
+  // scale & rotation smooth
+  this.scale+=(this.targetScale-this.scale)*0.12;
+  this.rotation+=(this.targetRotation-this.rotation)*0.1;
+  // color phase
+  this.colorPhase+=dt*0.5;
+  this.eyeColorPhase+=dt*0.8;
+  // tentacle waves
+  for(var i=0;i<this.tentacles.length;i++){
+    this.tentacles[i].wave+=dt*this.tentacles[i].waveSpeed*danceSpeed;
+  }
+  // body squash recovery
+  this.bodySquash+=(1-this.bodySquash)*0.15;
+  this.bodySquashY+=(1-this.bodySquashY)*0.15;
+  // dance
+  this.dancePhase+=dt*danceSpeed*2;
+  this.danceTimer-=dt;
+  if(this.danceTimer<=0){this.danceMove=Math.floor(rand(0,3));this.danceTimer=rand(.8,2.5);}
+  // mouth (laughing)
+  this.mouthOpen=Math.abs(Math.sin(this.dancePhase*1.5))*0.5+0.1;
+  // glow pulse
+  this.glow=0.6+Math.sin(this.dancePhase)*0.3+0.1;
+  // boundary
+  this.tx=clamp(this.tx,30,LW-30);
+  this.ty=clamp(this.ty,50,LH-100);
+  // cache color values (avoid string building in draw)
+  var cp=this.colorPhase;
+  var r=Math.sin(cp)*0.5+0.5;
+  var g=Math.sin(cp+2.1)*0.5+0.5;
+  var b=Math.sin(cp+4.2)*0.5+0.5;
+  this._r=Math.floor(lerp(57,176,r));
+  this._g=Math.floor(lerp(255,38,g));
+  this._b=Math.floor(lerp(20,255,b));
+  // eye color index (quantize to avoid string lookup every frame)
+  this._eyeIdx=Math.floor(((Math.sin(this.eyeColorPhase)*0.5+0.5)*3))%3;
+};
 
-function signatureLine(){
-  var lines={
-    critico:["I don't like it... but I smiled.",'Unexpectedly delicious.'],
-    rascal:['Anyone can create!','Sniff... it\'s the scent of joy!'],
-    noodle:['Hehehe!','Whoa!'],
-    ranger:["You're my best partner!",'Run wild!'],
-    astro:['To joy and beyond!','Deformation complete.']
-  };
-  var l=lines[activeChar.id]||['Haha!']; return l[Math.floor(Math.random()*l.length)];
-}
-function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}
+Alien.prototype.draw=function(ctx){
+  if(this.alpha<=0)return;
+  var r=this._r,g=this._g,b=this._b;
+  var dr=(r*0.6)|0, dg=(g*0.6)|0, db=(b*0.6)|0;
+  var lr=Math.min(r+60,255)|0, lg=Math.min(g+60,255)|0, lb=Math.min(b+60,255)|0;
+  var bodyStr='rgb('+r+','+g+','+b+')';
+  var darkStr='rgb('+dr+','+dg+','+db+')';
+  var lightStr='rgb('+lr+','+lg+','+lb+')';
+  var EYE_COLORS=['#39ff14','#b026ff','#ff69b4'];
+  var eyeColor=EYE_COLORS[this._eyeIdx];
 
-/* ---------- Rendering ---------- */
-var bgParticles=[];
-for(var i=0;i<30;i++)bgParticles.push({x:Math.random()*LW,y:Math.random()*LH,s:Math.random()*2+.5,sp:Math.random()*16+4,c:Math.random()});
-function drawBG(){
-  var g=ctx.createLinearGradient(0,0,0,LH);
-  g.addColorStop(0,shade(activeChar.colors.accent,-40));g.addColorStop(1,'#06060f');
-  // blue base: keep the background blue-tinted
-  var bg=ctx.createLinearGradient(0,0,0,LH);bg.addColorStop(0,'#1a3a6a');bg.addColorStop(.5,'#0e1d3a');bg.addColorStop(1,'#06060f');
-  ctx.fillStyle=bg;ctx.fillRect(0,0,LW,LH);
-  // dynamic background particles
-  for(var i=0;i<bgParticles.length;i++){var s=bgParticles[i];s.y+=s.sp*0.016;if(s.y>LH){s.y=-2;s.x=Math.random()*LW;}
-    ctx.globalAlpha=.15+s.c*.25;ctx.fillStyle='#8fc0ff';ctx.fillRect(s.x,s.y,s.s,s.s);}
-  ctx.globalAlpha=1;
-}
-function fillPath(pts,closed){ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(var i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);if(closed)ctx.closePath();}
-function drawEllipseFace(P){
-  // face outline fill
-  var pts=[P.topTop,P.topL,P.sideL,P.cheekL,P.jawL,P.chinL,P.chin,P.chinR,P.jawR,P.cheekR,P.sideR,P.topR];
-  fillPath(pts,true);
-  var grd=ctx.createRadialGradient(P.noseBridge.x,P.noseBridge.y,10,P.chin.x,P.chin.y,220);
-  grd.addColorStop(0,activeChar.colors.skin2);grd.addColorStop(1,shade(activeChar.colors.skin,-30));
-  ctx.fillStyle=grd;ctx.fill();
-  // outline stroke
-  ctx.lineWidth=2;ctx.strokeStyle=rgba('#000000',.18);ctx.stroke();
-}
-function drawFeature(P){
-  var C=activeChar.colors, F=activeChar.feat;
-  // ears
-  if(F.ears==='big'||F.ears==='huge'){
-    var es=F.ears==='huge'?1.4:1;
-    ctx.fillStyle=C.skin2;
-    fillPath([P.earTipL,P.earL,P.sideL],true);ctx.fill();
-    fillPath([P.earTipR,P.earR,P.sideR],true);ctx.fill();
-    ctx.fillStyle=rgba(C.feature,.7);
-    fillPath([P.earTipL,P.earL],true);ctx.fill();fillPath([P.earTipR,P.earR],true);ctx.fill();
-  }else if(F.ears==='small'){
-    ctx.fillStyle=C.skin2;ctx.beginPath();ctx.arc(P.earL.x,P.earL.y,10*1,0,7);ctx.fill();
-    ctx.beginPath();ctx.arc(P.earR.x,P.earR.y,10,0,7);ctx.fill();
+  ctx.save();
+  ctx.globalAlpha=this.alpha;
+  ctx.translate(this.x,this.y);
+  var dp=this.dancePhase;
+  var danceOffX=0,danceOffY=0,danceRot=0,danceScale=1;
+  switch(this.danceMove){
+    case 0: danceOffX=Math.sin(dp)*8; break;
+    case 1: danceRot=dp*0.8; danceOffY=Math.sin(dp*2)*6; break;
+    case 2: danceOffY=-Math.abs(Math.sin(dp*2))*15; break;
   }
-  // hat / hair / helmet (drawn behind/around the face first)
-  if(F.hat==='cowboy'){
-    ctx.fillStyle=C.feature;
-    fillPath([P.hatBrimL,P.hatBrimR,P.hatR,P.hatC,P.hatL],true);ctx.fill();
-    ctx.strokeStyle=rgba('#000',.2);ctx.lineWidth=2;ctx.stroke();
-  }else if(F.hat==='hair'){
-    ctx.fillStyle=C.feature;
-    fillPath([P.topTop,P.topL,P.hatL,P.hatC,P.hatR,P.topR],true);ctx.fill();
+  if(this.dragging){danceScale=1.1;}
+  ctx.rotate(this.rotation+danceRot);
+  ctx.scale(this.scale*danceScale,this.scale*danceScale);
+  ctx.translate(danceOffX,danceOffY);
+
+  var bs=this.bodySquash,bsy=this.bodySquashY;
+  var br=this.bodyR;
+
+  // tentacles (drawn behind body)
+  for(var i=0;i<this.tentacles.length;i++){
+    var t=this.tentacles[i];
+    var ca=Math.cos(t.angle),sa=Math.sin(t.angle);
+    var tx1=ca*br*0.7*bs, ty1=sa*br*0.7*bsy;
+    var wave=Math.sin(t.wave)*15, wave2=Math.sin(t.wave+1)*8;
+    var p2x=ca+wave*Math.cos(t.angle+1.5708), p2y=sa+wave*Math.sin(t.angle+1.5708);
+    var tx2=tx1+ca*t.len*bs+wave*Math.cos(t.angle+1.5708);
+    var ty2=ty1+sa*t.len*bsy+wave*Math.sin(t.angle+1.5708);
+    var tx3=tx2+ca*t.len*0.4+wave2*Math.cos(t.angle+1.5708);
+    var ty3=ty2+sa*t.len*0.4+wave2*Math.sin(t.angle+1.5708);
+    // tentacle glow (wide, semi-transparent)
+    ctx.strokeStyle=lightStr;ctx.lineWidth=8;ctx.lineCap='round';ctx.globalAlpha=this.alpha*0.4;
+    ctx.beginPath();ctx.moveTo(tx1,ty1);ctx.quadraticCurveTo(tx2,ty2,tx3,ty3);ctx.stroke();
+    ctx.globalAlpha=this.alpha;
+    ctx.strokeStyle=bodyStr;ctx.lineWidth=5;
+    ctx.beginPath();ctx.moveTo(tx1,ty1);ctx.quadraticCurveTo(tx2,ty2,tx3,ty3);ctx.stroke();
+    ctx.fillStyle=lightStr;ctx.beginPath();ctx.arc(tx3,ty3,5,0,6.283);ctx.fill();
   }
-  if(F.helmet){
-    // helmet outer shell
-    ctx.save();
-    ctx.beginPath();ctx.moveTo(P.helmL.x,P.helmL.y);
-    ctx.quadraticCurveTo(P.helmTop.x,P.helmTop.y,P.helmR.x,P.helmR.y);
-    ctx.quadraticCurveTo((P.helmR.x+P.helmBot.x)/2,P.helmBot.y-10,P.helmBot.x,P.helmBot.y);
-    ctx.quadraticCurveTo((P.helmL.x+P.helmBot.x)/2,P.helmBot.y-10,P.helmL.x,P.helmL.y);
-    var hg=ctx.createLinearGradient(P.helmTop.x,P.helmTop.y,P.helmBot.x,P.helmBot.y);
-    hg.addColorStop(0,shade(C.feature,40));hg.addColorStop(1,shade(C.feature,-30));
-    ctx.fillStyle=hg;ctx.fill();
-    ctx.lineWidth=3;ctx.strokeStyle=rgba('#000',.25);ctx.stroke();
-    // visor sheen
-    ctx.beginPath();ctx.moveTo(P.helmL.x,P.helmL.y);
-    ctx.quadraticCurveTo(P.helmTop.x,P.helmTop.y,P.helmR.x,P.helmR.y);
-    ctx.lineTo(P.helmR.x,P.helmR.y+40);
-    ctx.lineTo(P.helmL.x,P.helmL.y+40);
-    ctx.closePath();
-    ctx.fillStyle=rgba(C.visor||'#b0e8ff',.25);ctx.fill();
-    ctx.restore();
-  }
-  // face
-  drawEllipseFace(P);
-  // brows
-  ctx.strokeStyle=shade(C.feature,-20);ctx.lineWidth=5;ctx.lineCap='round';
-  ctx.beginPath();ctx.moveTo(P.browL.x-10,P.browL.y);ctx.lineTo(P.browL.x+10,P.browL.y);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(P.browR.x-10,P.browR.y);ctx.lineTo(P.browR.x+10,P.browR.y);ctx.stroke();
-  // eye whites
-  ctx.fillStyle='#fff';
-  ctx.beginPath();ctx.ellipse(P.eyeL.x,P.eyeL.y,11,9,0,0,7);ctx.fill();
-  ctx.beginPath();ctx.ellipse(P.eyeR.x,P.eyeR.y,11,9,0,0,7);ctx.fill();
+
+  // body (solid fill + manual highlight, NO createRadialGradient)
+  ctx.fillStyle=bodyStr;
+  ctx.beginPath();ctx.ellipse(0,0,br*bs,br*bsy,0,0,6.283);ctx.fill();
+  // body shading: darker bottom half
+  ctx.fillStyle='rgba(0,0,0,0.15)';
+  ctx.beginPath();ctx.ellipse(0,br*0.2,br*bs,br*0.5*bsy,0,0,3.1416);ctx.fill();
+  // top highlight
+  ctx.fillStyle=lightStr;
+  ctx.globalAlpha=this.alpha*0.7;
+  ctx.beginPath();ctx.ellipse(0,-br*0.3,br*0.7*bs,br*0.35*bsy,0,0,6.283);ctx.fill();
+  ctx.globalAlpha=this.alpha;
+  // slimy shine spot
+  ctx.fillStyle='rgba(255,255,255,0.35)';
+  ctx.beginPath();ctx.ellipse(-br*0.35,-br*0.35,br*0.25*bs,br*0.15*bsy,-0.5,0,6.283);ctx.fill();
+
+  // eyes — glow via pre-rendered sprite instead of shadowBlur
+  var eyeY=-br*0.15;
+  var eyeSp=br*0.35;
+  var eyeSize=7*bs;
+  // glow sprite (tinted by drawing sprite then over-drawing eye color)
+  ctx.globalAlpha=this.alpha*0.5;
+  ctx.drawImage(glowCanvas,-eyeSp-8,eyeY-8,16,16);
+  ctx.drawImage(glowCanvas,eyeSp-8,eyeY-8,16,16);
+  ctx.globalAlpha=this.alpha;
+  // eye fill
+  ctx.fillStyle=eyeColor;
+  ctx.beginPath();ctx.arc(-eyeSp,eyeY,eyeSize,0,6.283);ctx.fill();
+  ctx.beginPath();ctx.arc(eyeSp,eyeY,eyeSize,0,6.283);ctx.fill();
   // pupils
-  ctx.fillStyle='#222';
-  ctx.beginPath();ctx.arc(P.pupilL.x,P.pupilL.y,5,0,7);ctx.fill();
-  ctx.beginPath();ctx.arc(P.pupilR.x,P.pupilR.y,5,0,7);ctx.fill();
-  // glasses
-  if(F.glasses){ctx.strokeStyle='#222';ctx.lineWidth=3;
-    ctx.beginPath();ctx.arc(P.eyeL.x,P.eyeL.y,16,0,7);ctx.stroke();
-    ctx.beginPath();ctx.arc(P.eyeR.x,P.eyeR.y,16,0,7);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(P.eyeL.x+16,P.eyeL.y);ctx.lineTo(P.eyeR.x-16,P.eyeR.y);ctx.stroke();}
-  // nose
-  ctx.fillStyle=shade(C.skin,-15);
-  fillPath([P.noseBridge,P.noseL,P.noseTip,P.nostrilL,P.nostrilR,P.noseR],true);ctx.fill();
-  if(F.snout){ctx.fillStyle=C.feature;ctx.beginPath();ctx.arc(P.noseTip.x,P.noseTip.y,8,0,7);ctx.fill();}
-  // mouth
-  ctx.fillStyle=C.mouth;
-  var mouthPts=[P.mouthL,P.mouthTop,P.mouthC,P.mouthBot,P.mouthR];
-  fillPath(mouthPts,true);ctx.fill();
-  ctx.strokeStyle=rgba('#000',.25);ctx.lineWidth=2;ctx.stroke();
-  // teeth (goofy grin)
-  if(F.smile==='goofy'){ctx.fillStyle='#fff';fillPath([P.mouthTop,P.mouthC,P.mouthBot],true);ctx.fill();}
-  // whiskers
-  if(F.whiskers){ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.lineCap='round';
-    ctx.beginPath();ctx.moveTo(P.noseL.x,P.noseL.y);ctx.lineTo(P.whiskL1.x,P.whiskL1.y);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(P.noseL.x,P.noseL.y);ctx.lineTo(P.whiskL2.x,P.whiskL2.y);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(P.noseR.x,P.noseR.y);ctx.lineTo(P.whiskR1.x,P.whiskR1.y);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(P.noseR.x,P.noseR.y);ctx.lineTo(P.whiskR2.x,P.whiskR2.y);ctx.stroke();}
+  ctx.fillStyle='#fff';
+  ctx.beginPath();ctx.arc(-eyeSp+1,eyeY-1,3*bs,0,6.283);ctx.fill();
+  ctx.beginPath();ctx.arc(eyeSp+1,eyeY-1,3*bs,0,6.283);ctx.fill();
+  ctx.fillStyle='#000';
+  ctx.beginPath();ctx.arc(-eyeSp+1,eyeY-1,1.5*bs,0,6.283);ctx.fill();
+  ctx.beginPath();ctx.arc(eyeSp+1,eyeY-1,1.5*bs,0,6.283);ctx.fill();
+
+  // mouth (laughing)
+  var mw=br*0.3*this.mouthOpen+4;
+  var mh=br*0.2*this.mouthOpen+2;
+  ctx.fillStyle='#1a0a2a';
+  ctx.beginPath();ctx.ellipse(0,br*0.25,mw,mh,0,0,6.283);ctx.fill();
+  ctx.fillStyle='#ff6b9d';
+  ctx.beginPath();ctx.ellipse(0,br*0.25+mh*0.3,mw*0.6,mh*0.5,0,0,6.283);ctx.fill();
+  if(this.mouthOpen>0.3){
+    ctx.fillStyle='#fff';
+    ctx.fillRect(-mw*0.6,br*0.25-mh,mw*0.4,mh*0.5);
+    ctx.fillRect(mw*0.2,br*0.25-mh,mw*0.4,mh*0.5);
+  }
+
+  // antenna
+  ctx.strokeStyle=bodyStr;ctx.lineWidth=3;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(0,-br*bsy);
+  ctx.lineTo(Math.sin(dp*1.5)*8,-br*bsy-18);ctx.stroke();
+  // antenna bulb glow via sprite
+  ctx.globalAlpha=this.alpha*0.4;
+  ctx.drawImage(glowCanvas,Math.sin(dp*1.5)*8-7,-br*bsy-25,14,14);
+  ctx.globalAlpha=this.alpha;
+  ctx.fillStyle=eyeColor;
+  ctx.beginPath();ctx.arc(Math.sin(dp*1.5)*8,-br*bsy-18,5,0,6.283);ctx.fill();
+
+  ctx.restore();
+};
+
+/* ---------- Game state ---------- */
+var aliens=[],particles=[],beams=[],shake=0;
+var state='hint',beatPhase=0,beatTimer=0,beatIndex=0;
+var autoSpawn=false,chaosMode=false;
+var dragTarget=null,dragMode=true;
+var lastBeatSound=0;
+var comboLevel=1;
+
+function spawnAlien(x,y){
+  if(aliens.length>=30){showToast('Max 30 aliens!');return;}
+  var a=new Alien(x||rand(60,LW-60),y||rand(120,LH-180));
+  a.bodySquash=0.3;a.bodySquashY=1.5; // spawn pop
+  aliens.push(a);
+  shake=8;
+  spawnSpawnParticles(a.x,a.y);
+  sndSpawn();
+  ensureAudio();startHum();
+  updateCombo();
 }
-function drawDeformOverlay(){
-  // deformation stretch lines (highly stretched springs)
-  ctx.strokeStyle=rgba('#5ab0ff',.5);ctx.lineWidth=2;
-  for(var i=0;i<mesh.springs.length;i++){var s=mesh.springs[i];var d=dist(s.a.x,s.a.y,s.b.x,s.b.y);var r=d/s.rest;if(r>1.5){
-    ctx.beginPath();ctx.moveTo(s.a.x,s.a.y);ctx.lineTo(s.b.x,s.b.y);ctx.stroke();}}
-  // particles
-  for(var i=0;i<particles.length;i++){var p=particles[i];ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,7);ctx.fill();}
-  ctx.globalAlpha=1;
-  // ripples
-  for(var i=0;i<ripples.length;i++){var r=ripples[i];ctx.globalAlpha=Math.max(0,r.life*0.5);ctx.strokeStyle=r.color;ctx.lineWidth=3;ctx.beginPath();ctx.arc(r.x,r.y,r.r,0,7);ctx.stroke();}
+function spawnSpawnParticles(x,y){
+  if(particles.length>MAX_PARTICLES)return;
+  for(var i=0;i<12;i++){
+    var a=Math.random()*Math.PI*2,sp=rand(40,150);
+    particles.push({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,
+      color:['#39ff14','#b026ff','#ff69b4','#fff'][Math.floor(Math.random()*4)],size:rand(2,5),type:'spark'});
+  }
+  beams.push({x:x,y:y-100,life:1,width:50});
+}
+function spawnBeamParticles(x,y){
+  if(particles.length>MAX_PARTICLES-6)return;
+  for(var i=0;i<6;i++){
+    particles.push({x:x+rand(-20,20),y:y-40,vx:rand(-10,10),vy:rand(-80,-30),life:1,
+      color:'#39ff14',size:rand(1,3),type:'beam'});
+  }
+}
+function updateCombo(){
+  var n=aliens.length;
+  var prev=comboLevel;
+  comboLevel=Math.max(1,Math.ceil(n/3));
+  document.getElementById('comboStat').textContent=comboLevel+'x';
+  document.getElementById('countStat').textContent=n;
+  var badge=document.getElementById('comboBadge');
+  if(comboLevel>prev){
+    document.getElementById('comboNum').textContent=comboLevel;
+    badge.classList.add('show');
+    setTimeout(function(){badge.classList.remove('show');},1500);
+    sndPop();
+  }
+}
+
+/* ---------- Particles / Beams ---------- */
+var MAX_PARTICLES=200;
+function updateParticles(dt){
+  for(var i=particles.length-1;i>=0;i--){
+    var p=particles[i];
+    p.x+=p.vx*dt;p.y+=p.vy*dt;
+    if(p.type==='spark')p.vy+=300*dt;
+    else if(p.type==='beam')p.vy+=20*dt;
+    p.life-=dt*(p.type==='beam'?1.5:2);
+    if(p.life<=0){particles[i]=particles[particles.length-1];particles.pop();}
+  }
+  for(var i=beams.length-1;i>=0;i--){
+    beams[i].life-=dt*1.5;
+    if(beams[i].life<=0){beams[i]=beams[beams.length-1];beams.pop();}
+  }
+  if(shake>0)shake=Math.max(0,shake-dt*60);
+}
+// Pre-created beam gradient (reused every frame)
+var beamGradient=null;
+function drawBeams(){
+  if(beams.length===0)return;
+  if(!beamGradient){
+    beamGradient=ctx.createLinearGradient(0,0,0,100);
+    beamGradient.addColorStop(0,'rgba(57,255,20,0)');
+    beamGradient.addColorStop(0.5,'rgba(57,255,20,0.3)');
+    beamGradient.addColorStop(1,'rgba(176,38,255,0.1)');
+  }
+  for(var i=0;i<beams.length;i++){
+    var b=beams[i];
+    ctx.globalAlpha=Math.max(0,b.life*0.4);
+    ctx.fillStyle=beamGradient;
+    ctx.beginPath();
+    ctx.moveTo(b.x-b.width*b.life,b.y);
+    ctx.lineTo(b.x+b.width*b.life,b.y);
+    ctx.lineTo(b.x+b.width*0.3*b.life,b.y+100);
+    ctx.lineTo(b.x-b.width*0.3*b.life,b.y+100);
+    ctx.closePath();ctx.fill();
+  }
   ctx.globalAlpha=1;
 }
+// Batch particles by color to reduce fillStyle changes
+var _pBuckets={};
+function drawParticles(){
+  if(particles.length===0)return;
+  // group by color
+  _pBatches.length=0;
+  for(var i=0;i<particles.length;i++){
+    var p=particles[i];
+    var key=p.color;
+    var idx=_pColorIdx[key];
+    if(idx===undefined){idx=_pBatches.length;_pBatches.push({color:key,items:[]});_pColorIdx[key]=idx;}
+    _pBatches[idx].items.push(p);
+  }
+  for(var b=0;b<_pBatches.length;b++){
+    var batch=_pBatches[b];
+    ctx.fillStyle=batch.color;
+    ctx.beginPath();
+    for(var j=0;j<batch.items.length;j++){
+      var p=batch.items[j];
+      ctx.globalAlpha=Math.max(0,p.life);
+      ctx.moveTo(p.x+p.size,p.y);
+      ctx.arc(p.x,p.y,p.size,0,6.283);
+    }
+    ctx.fill();
+    _pColorIdx[batch.color]=undefined;
+  }
+  _pBatches.length=0;
+  ctx.globalAlpha=1;
+}
+var _pBatches=[];
+var _pColorIdx={};
+
+/* ---------- Dance physics ---------- */
+function getDanceSpeed(){
+  return 1+aliens.length*0.08;
+}
+function updateDance(dt){
+  var ds=getDanceSpeed();
+  beatPhase+=dt*ds*2;
+  beatTimer+=dt*ds;
+  var beatInterval=0.5/Math.max(1,ds*0.5);
+  if(beatTimer>=beatInterval){
+    beatTimer=0;
+    onBeat(ds);
+  }
+}
+function onBeat(ds){
+  // each alien does a beat action
+  for(var i=0;i<aliens.length;i++){
+    var a=aliens[i];
+    if(!a.dragging){
+      a.bodySquash=0.7+rand(-0.1,0.1);
+      a.bodySquashY=1.3+rand(-0.1,0.1);
+      if(Math.random()<0.3)a.danceMove=Math.floor(rand(0,3));
+    }
+  }
+  // sound
+  if(aliens.length>0){
+    sndBeat(comboLevel*0.3);
+    if(Math.random()<0.4)sndZap();
+    if(beatIndex%4===0&&Math.random()<0.5)sndLaugh();
+  }
+  // beam particles
+  if(chaosMode){
+    for(var i=0;i<aliens.length;i++){
+      if(Math.random()<0.3)spawnBeamParticles(aliens[i].x,aliens[i].y);
+    }
+  }
+  beatIndex++;
+}
+
+/* ---------- Chaos mode ---------- */
+function applyChaos(dt){
+  if(!chaosMode)return;
+  for(var i=0;i<aliens.length;i++){
+    var a=aliens[i];
+    if(!a.dragging){
+      a.targetRotation+=rand(-2,2)*dt;
+      a.targetScale=clamp(a.targetScale+rand(-0.3,0.3)*dt,0.5,1.5);
+      if(Math.random()<dt*2){
+        a.tx=clamp(a.x+rand(-60,60),30,LW-30);
+        a.ty=clamp(a.y+rand(-60,60),50,LH-100);
+      }
+    }
+  }
+}
+
+/* ---------- Transparent overlap ---------- */
+var _sortBuf=[];
+function drawAliens(){
+  // copy to reusable buffer, sort in place (no allocation)
+  var n=aliens.length;
+  _sortBuf.length=n;
+  for(var i=0;i<n;i++)_sortBuf[i]=aliens[i];
+  _sortBuf.sort(function(a,b){return a.y-b.y;});
+  for(var i=0;i<n;i++)_sortBuf[i].draw(ctx);
+  _sortBuf.length=0;
+}
+
+/* ---------- Render ---------- */
 function render(){
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  ctx.clearRect(0,0,LW,LH);
+  // white background (replaces clearRect + fillRect with single fill)
+  ctx.fillStyle='#fff';
+  ctx.fillRect(0,0,LW,LH);
+  // subtle floor shadow
+  ctx.fillStyle='rgba(0,0,0,0.02)';
+  ctx.fillRect(0,LH-110,LW,110);
+
   ctx.save();
-  if(shake>0)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
-  drawBG();
-  if(state==='playing'||state==='result'){
-    drawFeature(mesh.points);
-    drawDeformOverlay();
+  if(shake>0)ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake);
+
+  // beams (behind aliens)
+  drawBeams();
+
+  // aliens with transparent overlap
+  if(aliens.length>1){
+    ctx.globalCompositeOperation='multiply';
   }
+  drawAliens();
+  ctx.globalCompositeOperation='source-over';
+
+  // particles
+  drawParticles();
+
   ctx.restore();
-  // spatial distortion (extreme deformation): subtle skew on the outer canvas
-  if(distort>0){gameArea.style.transform='skew('+(Math.sin(Date.now()/60)*distort*3)+'deg,'+(Math.cos(Date.now()/70)*distort*3)+'deg) scale('+(1-distort*0.02)+')';}
-  else gameArea.style.transform='';
+
+  // chaos mode tint
+  if(chaosMode){
+    ctx.fillStyle='rgba(176,38,255,0.03)';
+    ctx.fillRect(0,0,LW,LH);
+  }
 }
 
 /* ---------- Main loop ---------- */
 var lastT=performance.now();
-function loop(ts){var dt=(ts-lastT)/1000;lastT=ts;if(dt>0.05)dt=0.05;update(dt);render();requestAnimationFrame(loop);}
-
-/* ---------- Flow control ---------- */
-var menuScreen=document.getElementById('menuScreen'),charScreen=document.getElementById('charScreen'),
-    chScreen=document.getElementById('chScreen'),remixScreen=document.getElementById('remixScreen'),
-    resultScreen=document.getElementById('resultScreen');
-function show(el){[menuScreen,charScreen,chScreen,remixScreen,resultScreen].forEach(function(s){s.classList.add('hidden');});if(el)el.classList.remove('hidden');}
-
-function renderLB(){var lb=getLB();var el=document.getElementById('lbList');el.innerHTML='';
-  if(!lb.length){el.innerHTML='<div class="lbEmpty">No records yet — go mold a face!</div>';return;}
-  lb.forEach(function(r,i){var d=document.createElement('div');d.className='lbItem';d.innerHTML='<span>'+(i+1)+'. '+r.name+' <span style="color:rgba(255,255,255,.4)">· '+r.mode+'</span></span><span class="r">'+r.score+'</span>';el.appendChild(d);});}
-function refreshUnlocks(){var rem=document.getElementById('mRemix');if(remixUnlocked()){rem.classList.remove('locked');document.getElementById('remixLock').textContent='MIX & MATCH';}else{rem.classList.add('locked');document.getElementById('remixLock').textContent='Unlock by clearing challenges';}
-  document.getElementById('bestVal').textContent=getBest();}
-
-function openMenu(){state='menu';show(menuScreen);renderLB();refreshUnlocks();document.getElementById('hud').classList.add('hidden');document.getElementById('challenge').style.display='none';document.getElementById('playHint').classList.add('hidden');}
-
-function openCharSelect(){show(charScreen);var grid=document.getElementById('charGrid');grid.innerHTML='';
-  CHARACTERS.forEach(function(c){var d=document.createElement('div');d.className='charCard';d.style.borderColor=rgba(c.colors.accent,.5);
-    d.innerHTML='<div class="av" style="background:'+rgba(c.colors.skin,.3)+';border:2px solid '+rgba(c.colors.accent,.6)+'">'+c.emoji+'</div><div class="nm">'+c.name+'</div><div class="tt">'+c.title+'</div>';
-    d.onclick=function(){activeChar=c;startFree();};grid.appendChild(d);});}
-
-function openChallenge(){show(chScreen);var list=document.getElementById('chList');list.innerHTML='';var cl=cleared();
-  CHALLENGES.forEach(function(ch,i){var d=document.createElement('div');d.className='chItem'+(cl.indexOf(i)>=0?' done':'');
-    var c=CHARACTERS.find(function(x){return x.id===ch.char;});
-    d.innerHTML='<div class="ct">'+ch.title+'</div><div class="cd">'+ch.desc+'</div>';
-    d.onclick=function(){challengeIdx=i;activeChar=c;startChallenge();};list.appendChild(d);});}
-
-function openRemix(){if(!remixUnlocked())return;show(remixScreen);var panel=document.getElementById('remixPanel');panel.innerHTML='';
-  var groups=[['ring','Face'],['eyes','Eyes'],['nose','Nose'],['mouth','Mouth'],['ears','Ears'],['hat','Hat/Hair'],['whiskers','Whiskers']];
-  groups.forEach(function(g){
-    var row=document.createElement('div');row.className='remixRow';row.innerHTML='<span>'+g[1]+'</span><div class="seg" id="seg-'+g[0]+'"></div>';
-    panel.appendChild(row);var seg=row.querySelector('.seg');
-    CHARACTERS.forEach(function(c){var b=document.createElement('button');b.textContent=c.name;if(remixSrc[g[0]]===c.id)b.classList.add('on');
-      b.onclick=function(){remixSrc[g[0]]=c.id;seg.querySelectorAll('button').forEach(function(x){x.classList.remove('on');});b.classList.add('on');};seg.appendChild(b);});});}
-
-function startFree(){mode='free';buildMeshFromChar(activeChar);beginPlay();}
-function startChallenge(){mode='challenge';buildMeshFromChar(activeChar);challengeTimer=30;challengeDone=false;challengeProgress=0;beginPlay();document.getElementById('challenge').style.display='block';document.getElementById('chTitle').textContent=CHALLENGES[challengeIdx].title;}
-function startRemix(){
-  mode='remix';
-  var byId=function(id){return CHARACTERS.find(function(c){return c.id===id;})||CHARACTERS[0];};
-  var ring=byId(remixSrc.ring), eyes=byId(remixSrc.eyes), nose=byId(remixSrc.nose),
-      mouth=byId(remixSrc.mouth), ears=byId(remixSrc.ears), hat=byId(remixSrc.hat), wh=byId(remixSrc.whiskers);
-  // merge visual features: each part taken from its source character, colors based on the face character
-  var mergedFeat={
-    ears:ears.feat.ears, hat:hat.feat.hat, helmet:hat.feat.helmet,
-    whiskers:wh.feat.whiskers, glasses:eyes.feat.glasses,
-    smile:mouth.feat.smile, snout:nose.feat.snout, jaw:ring.feat.jaw
-  };
-  activeChar={id:'remix',name:'Remix Monster',emoji:'🧩',title:'DIY Mutant',colors:ring.colors,feat:mergedFeat,ov:ring.ov};
-  buildMesh(remixSrc);beginPlay();
-}
-function buildMeshFromChar(c){var src={};for(var k in remixSrc)src[k]=c.id;buildMesh(src);}
-function beginPlay(){
-  state='playing';elapsed=0;scoreAccum=0;creativity=0;funniness=0;bonus=0;particles=[];ripples=[];shake=0;distort=0;
-  show(null);
-  document.getElementById('hud').classList.remove('hidden');
-  document.getElementById('backBtn').classList.remove('hidden');
-  document.getElementById('scoreVal').textContent='0';
-  document.getElementById('playHint').classList.remove('hidden');
-  setTimeout(function(){document.getElementById('playHint').classList.add('hidden');},3500);
-  ensureAudio();sndScore();
+function loop(ts){
+  var dt=(ts-lastT)/1000;lastT=ts;if(dt>0.05)dt=0.05;
+  if(state==='playing'){
+    var ds=getDanceSpeed();
+    for(var i=0;i<aliens.length;i++)aliens[i].update(dt,beatPhase,ds);
+    updateDance(dt);
+    applyChaos(dt);
+    // auto spawn
+    if(autoSpawn&&aliens.length<25&&Math.random()<dt*0.8){
+      spawnAlien(rand(60,LW-60),rand(120,LH-180));
+    }
+  }
+  updateParticles(dt);
+  render();
+  requestAnimationFrame(loop);
 }
 
-function finishGame(){
-  var total=Math.floor(scoreAccum);
-  if(mode==='challenge'&&challengeProgress>=0.85){bonus=200;total+=bonus;setCleared(challengeIdx);}
-  if(total>getBest())localStorage.setItem('face_best',String(total));
-  addLB({name:activeChar.name+'★',mode:mode==='free'?'Free':'Challenge',score:total});
-  // star rating
-  var st=1;if(creativity>0.4)st=2;if(creativity>0.7||funniness>0.6)st=3;
-  document.getElementById('resStars').textContent='★'.repeat(st)+'☆'.repeat(3-st);
-  document.getElementById('resCreate').textContent=Math.floor(creativity*100);
-  document.getElementById('resFunny').textContent=Math.floor(funniness*100);
-  document.getElementById('resBonusRow').style.display=mode==='challenge'?'block':'none';
-  document.getElementById('resBonus').textContent=bonus;
-  document.getElementById('resTotal').textContent=total;
-  document.getElementById('resLogo').textContent=mode==='challenge'?'CHALLENGE':mode==='remix'?'REMIX':'FREE';
-  state='result';show(resultScreen);refreshUnlocks();renderLB();
-  sndWin();
+/* ---------- Input ---------- */
+function canvasPos(e){
+  return{x:(e.clientX-canvasRect.left)/canvasRect.width*LW,y:(e.clientY-canvasRect.top)/canvasRect.height*LH};
+}
+function getAlienAt(x,y){
+  for(var i=aliens.length-1;i>=0;i--){
+    var a=aliens[i];
+    var d=dist(x,y,a.x,a.y);
+    if(d<a.bodyR*a.scale*1.2)return a;
+  }
+  return null;
+}
+canvas.addEventListener('pointerdown',function(e){
+  e.preventDefault();ensureAudio();
+  if(state!=='playing')return;
+  var p=canvasPos(e);
+  var a=getAlienAt(p.x,p.y);
+  if(a&&dragMode){
+    dragTarget=a;a.dragging=true;
+    a.dragOffX=p.x-a.x;a.dragOffY=p.y-a.y;
+    a.bodySquash=0.6;a.bodySquashY=1.4;
+    sndSquelch();
+  }else{
+    // spawn alien at tap
+    spawnAlien(p.x,p.y);
+  }
+});
+canvas.addEventListener('pointermove',function(e){
+  e.preventDefault();
+  if(state!=='playing')return;
+  if(dragTarget){
+    var p=canvasPos(e);
+    dragTarget.tx=p.x-dragTarget.dragOffX;
+    dragTarget.ty=p.y-dragTarget.dragOffY;
+    dragTarget.x=dragTarget.tx;
+    dragTarget.y=dragTarget.ty;
+  }
+});
+window.addEventListener('pointerup',function(e){
+  if(dragTarget){
+    dragTarget.dragging=false;
+    dragTarget.bodySquash=1.2;dragTarget.bodySquashY=0.8;
+    sndPop();
+    dragTarget=null;
+  }
+});
+window.addEventListener('pointercancel',function(){
+  if(dragTarget){dragTarget.dragging=false;dragTarget=null;}
+});
+window.addEventListener('blur',function(){
+  if(dragTarget){dragTarget.dragging=false;dragTarget=null;}
+});
+
+/* ---------- UI ---------- */
+var toastTimer=null;
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){t.classList.remove('show');},2000);
 }
 
-document.getElementById('backBtn').onclick=function(){openMenu();};
-document.getElementById('mFree').onclick=openCharSelect;
-document.getElementById('mChallenge').onclick=openChallenge;
-document.getElementById('mRemix').onclick=openRemix;
-document.getElementById('charBack').onclick=openMenu;
-document.getElementById('chBack').onclick=openMenu;
-document.getElementById('remixBack').onclick=openMenu;
-document.getElementById('remixStart').onclick=startRemix;
-document.getElementById('resAgain').onclick=function(){if(mode==='challenge')startChallenge();else if(mode==='remix')startRemix();else startFree();};
-document.getElementById('resHome').onclick=openMenu;
-document.getElementById('resShare').onclick=shareGame;
-document.getElementById('shareMenuBtn').onclick=shareGame;
-
-function shareGame(){
-  var total=document.getElementById('resTotal').textContent||Math.floor(scoreAccum)||0;
-  var text='I scored '+total+' molding '+activeChar.name+' in Face Lab! Try it →';
-  if(navigator.share){navigator.share({title:'Face Lab',text:text}).catch(function(){});}
-  else{showToast('Copied: '+text);try{navigator.clipboard.writeText(text);}catch(e){}}
+document.getElementById('btnStart').onclick=function(e){
+  e.stopPropagation();
+  startGame();
+};
+function startGame(){
+  state='playing';
+  document.getElementById('hintOverlay').classList.add('hide');
+  ensureAudio();startHum();
+  // spawn first alien
+  setTimeout(function(){spawnAlien(LW/2,LH*0.45);},300);
 }
+
+document.getElementById('btnAdd').onclick=function(e){e.stopPropagation();
+  if(state!=='playing')return;
+  spawnAlien(rand(60,LW-60),rand(120,LH-180));
+};
+
+document.getElementById('btnAuto').onclick=function(e){e.stopPropagation();
+  autoSpawn=!autoSpawn;
+  this.classList.toggle('active',autoSpawn);
+  showToast(autoSpawn?'Auto Spawn ON':'Auto Spawn OFF');
+};
+
+document.getElementById('btnChaos').onclick=function(e){e.stopPropagation();
+  chaosMode=!chaosMode;
+  this.classList.toggle('active',chaosMode);
+  showToast(chaosMode?'Chaos Dance ON':'Chaos Dance OFF');
+};
+
+document.getElementById('btnPhoto').onclick=function(e){e.stopPropagation();
+  if(state!=='playing')return;
+  sndPhoto();shake=6;
+  // flash
+  var flash=document.createElement('div');
+  flash.style.cssText='position:absolute;inset:0;background:#fff;z-index:30;opacity:.8;transition:opacity .3s;';
+  gameArea.appendChild(flash);
+  setTimeout(function(){flash.style.opacity='0';},50);
+  setTimeout(function(){flash.remove();},400);
+  // capture canvas as image
+  try{
+    var link=document.createElement('a');
+    link.download='alien-dance-'+Date.now()+'.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+    showToast('Photo saved!');
+  }catch(err){showToast('Photo saved!');}
+};
+
+document.getElementById('btnClear').onclick=function(e){e.stopPropagation();
+  if(aliens.length===0)return;
+  // pop all
+  for(var i=0;i<aliens.length;i++){
+    spawnSpawnParticles(aliens[i].x,aliens[i].y);
+  }
+  aliens=[];
+  comboLevel=1;
+  document.getElementById('comboStat').textContent='1x';
+  document.getElementById('countStat').textContent='0';
+  sndClear();shake=10;
+  showToast('Cleared!');
+};
+
+document.getElementById('copyBtn').onclick=function(e){e.stopPropagation();
+  var text='Alien Dance Party! Spawned '+aliens.length+' aliens at '+comboLevel+'x combo! 👽🛸\nPlay: '+location.href;
+  if(navigator.share){
+    navigator.share({title:'Alien Dance Party',text:text}).catch(function(){});
+  }else{
+    try{navigator.clipboard.writeText(text);showToast('Copied to clipboard!');}
+    catch(err){showToast('Share: '+location.href);}
+  }
+};
 
 /* ---------- Init ---------- */
+function init(){
+  setupCanvas();fitArea();
+  // draw preview alien on hint overlay
+  var pv=document.getElementById('previewAlien');
+  pv.innerHTML='<svg viewBox="0 0 80 80" width="80" height="80">'+
+    '<ellipse cx="40" cy="42" rx="22" ry="20" fill="#39ff14" stroke="#2ad00f" stroke-width="2"/>'+
+    '<ellipse cx="40" cy="42" rx="22" ry="20" fill="url(#g1)" opacity="0.4"/>'+
+    '<circle cx="33" cy="38" r="5" fill="#b026ff"/><circle cx="47" cy="38" r="5" fill="#b026ff"/>'+
+    '<circle cx="33" cy="38" r="2" fill="#fff"/><circle cx="47" cy="38" r="2" fill="#fff"/>'+
+    '<ellipse cx="40" cy="48" rx="6" ry="3" fill="#1a0a2a"/>'+
+    '<line x1="40" y1="22" x2="40" y2="12" stroke="#39ff14" stroke-width="2"/>'+
+    '<circle cx="40" cy="10" r="4" fill="#b026ff"/>'+
+    '<path d="M20 55 Q15 65 25 68" stroke="#39ff14" stroke-width="4" fill="none" stroke-linecap="round"/>'+
+    '<path d="M60 55 Q65 65 55 68" stroke="#39ff14" stroke-width="4" fill="none" stroke-linecap="round"/>'+
+    '<path d="M30 58 Q28 68 35 70" stroke="#39ff14" stroke-width="4" fill="none" stroke-linecap="round"/>'+
+    '<path d="M50 58 Q52 68 45 70" stroke="#39ff14" stroke-width="4" fill="none" stroke-linecap="round"/>'+
+    '<defs><radialGradient id="g1"><stop offset="0" stop-color="#fff" stop-opacity="0.5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs></svg>';
+  requestAnimationFrame(loop);
+}
 window.addEventListener('resize',function(){fitArea();setupCanvas();});
-window.addEventListener('orientationchange',function(){setTimeout(function(){fitArea();setupCanvas();},250);});
-setupCanvas();fitArea();
-openMenu();
-requestAnimationFrame(loop);
-window.FaceGame={getState:function(){return state;},getScore:function(){return Math.floor(scoreAccum);},getMode:function(){return mode;},getDeform:function(){return lastDeform;},getProgress:function(){return challengeProgress;},_forceExtreme:function(){var P=mesh.points;P.noseTip.y=P.noseBridge.y-260;P.mouthL.y-=40;P.mouthR.y-=40;}};
+window.addEventListener('scroll',updateCanvasRect,{passive:true});
+window.addEventListener('orientationchange',function(){setTimeout(function(){fitArea();setupCanvas();},300);});
+init();
+window.AlienGame={
+  getState:function(){return state;},
+  getAlienCount:function(){return aliens.length;},
+  getCombo:function(){return comboLevel;},
+  _spawn:function(n){for(var i=0;i<n;i++)spawnAlien(rand(60,LW-60),rand(120,LH-180));},
+  _startGame:startGame
+};
 </script>
 </body>
 </html>
